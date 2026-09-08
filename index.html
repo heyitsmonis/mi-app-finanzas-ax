@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mi Plan de Pagos - Centro de deuda v168</title>
+  <title>Mi Plan de Pagos · Axel</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -146,7 +146,9 @@ function accountDisplayHtml(name,size='table'){
   if(inst)return `<span class="inline-flex items-center min-w-0 align-middle">${logo}</span>`;
   return `<span class="inline-flex items-center min-w-0 align-middle"><span class="truncate">${escapeHtml(label)}</span></span>`;
 }
-const STORAGE_KEY='miplandepagos_estable_status_v4';
+const PROFILE_ID='axel';
+const PROFILE_LABEL='Axel';
+const STORAGE_KEY='miplandepagos_axel_v1';
 let state={
   currentMonth:5,currentYear:2026,
   config:{salaryMonthly:20000,salaryBiweekly:10000,payDate1:1,payDate2:16,savingsGoal:5000,currency:'MXN',yearEndExtras:{bonusEstimated:0,bonusReal:0,savingsFundEstimated:0,savingsFundReal:0,otherName:'Otro extra',otherEstimated:0,otherReal:0,notes:''}},
@@ -6079,8 +6081,10 @@ function updateYearEndExtra(k,v){
 }
 function exportBackup(){
   const payload={
-    app:'Mi plan de pagos',
-    version:'1.0',
+    app:'Mi plan de pagos · Axel',
+    profileId:PROFILE_ID,
+    profileLabel:PROFILE_LABEL,
+    version:'1.1',
     exportedAt:new Date().toISOString(),
     data:state
   };
@@ -6089,7 +6093,7 @@ function exportBackup(){
   const a=document.createElement('a');
   const date=new Date().toISOString().slice(0,10);
   a.href=url;
-  a.download=`mi-plan-de-pagos-respaldo-${date}.json`;
+  a.download=`mi-plan-de-pagos-axel-respaldo-${date}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -6104,7 +6108,12 @@ function importBackup(event){
       const parsed=JSON.parse(reader.result);
       const imported=parsed.data||parsed;
       if(!imported||typeof imported!=='object'||!imported.config){alert('El archivo no parece ser un respaldo válido de Mi plan de pagos.');return;}
-      if(!confirm('¿Importar este respaldo? Esto reemplazará la información actual de la app en este navegador.'))return;
+      if(parsed.profileId && parsed.profileId!==PROFILE_ID){
+        alert(`Este respaldo pertenece al perfil ${parsed.profileLabel||parsed.profileId}, no al perfil ${PROFILE_LABEL}. No se importó nada.`);
+        return;
+      }
+      const legacyWarning=!parsed.profileId?'\n\nEste respaldo es antiguo y no tiene perfil identificado. Continúa solo si sabes que corresponde a Axel.':'';
+      if(!confirm(`¿Importar este respaldo en el perfil ${PROFILE_LABEL}? Esto reemplazará únicamente la información de Axel guardada por esta app.${legacyWarning}`))return;
       state=imported;
       if(!state.config.yearEndExtras) state.config.yearEndExtras={bonusEstimated:0,bonusReal:0,savingsFundEstimated:0,savingsFundReal:0,otherName:'Otro extra',otherEstimated:0,otherReal:0,notes:''};
       if(!state.config.yearEndExtras.otherName) state.config.yearEndExtras.otherName='Otro extra';
