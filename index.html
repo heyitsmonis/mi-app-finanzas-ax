@@ -6960,10 +6960,179 @@ function saveCreditBankPayment(event,cardId){
   saveState();closeModal();render();
 }
 
+
+/* ===== v175 · propiedad del gasto + alta de compras de terceros desde Personas ===== */
+const _openRecordModalV175 = openRecordModal;
+const _saveRecordFormV175 = saveRecordForm;
+const _openCreditMovementModalV175 = openCreditMovementModal;
+const _renderCreditPeopleViewV175 = renderCreditPeopleView;
+const _renderCreditPersonDetailViewV175 = renderCreditPersonDetailViewV168;
+const _confirmDeleteV175 = confirmDelete;
+
+function getRecordCollectionV175(type){return type==='installment'?'installments':type==='fixed'?'fixed':'variable';}
+function getRecordOwnerLabelV175(owner){return owner==='shared'?'Compartido':owner==='other'?'De otra persona':'Mío';}
+function getRecordOwnershipTotalV175(item,type){
+  if(type==='installment')return parseFloat(item?.totalAmount)||0;
+  return parseFloat(item?.amount)||0;
+}
+function toggleRecordOwnershipFieldsV175(form,ownerType){
+  const box=form?.querySelector('[data-record-owner-person-v175]');
+  const shared=form?.querySelector('[data-record-owner-shared-v175]');
+  if(box)box.classList.toggle('hidden',ownerType==='self');
+  if(shared)shared.classList.toggle('hidden',ownerType!=='shared');
+}
+function injectRecordOwnershipV175(type,id='',presetPerson=''){
+  const form=document.querySelector(`#modalContent form[data-record-type="${type}"]`);if(!form||form.querySelector('[data-record-owner-v175]'))return;
+  const collection=getRecordCollectionV175(type),item=(state[collection]||[]).find(x=>String(x.id)===String(id||''));
+  const ownerType=item?.ownerType||((presetPerson||'')?'other':'self'),person=ownerType==='self'?'':(presetPerson||item?.person||''),total=getRecordOwnershipTotalV175(item,type),sharedOther=item?.sharedOtherAmount!==undefined?parseFloat(item.sharedOtherAmount)||0:(ownerType==='shared'?total/2:0);
+  const known=[...new Set(getSavedCreditPeople().filter(Boolean))];
+  const anchor=form.querySelector('input[name="concept"]')?.closest('div')||form.firstElementChild;
+  const html=`<section data-record-owner-v175 class="rounded-2xl bg-azul-50/55 border border-azul-100 p-3.5">
+    <div class="flex items-start justify-between gap-3 mb-3"><div><div class="text-[10px] font-extrabold text-azul-600 uppercase tracking-wide">De quién es este gasto</div><p class="text-[9.5px] text-gray-400 mt-0.5">Esta clasificación también alimenta Tarjetas → Personas/cobros cuando el gasto vive en una tarjeta de crédito.</p></div><span class="px-2 py-1 rounded-lg bg-white border border-azul-100 text-[8.5px] font-bold text-azul-600">Propiedad</span></div>
+    <div class="grid grid-cols-3 gap-2">
+      <label class="cursor-pointer"><input type="radio" name="recordOwnerType" value="self" class="peer sr-only" ${ownerType==='self'?'checked':''} onchange="toggleRecordOwnershipFieldsV175(this.form,this.value)"><div class="rounded-xl border border-gray-100 bg-white p-2.5 text-center peer-checked:border-azul-300 peer-checked:ring-2 peer-checked:ring-azul-100"><i data-lucide="user" class="w-4 h-4 mx-auto text-azul-500 mb-1"></i><b class="text-[10px]">Mío</b></div></label>
+      <label class="cursor-pointer"><input type="radio" name="recordOwnerType" value="shared" class="peer sr-only" ${ownerType==='shared'?'checked':''} onchange="toggleRecordOwnershipFieldsV175(this.form,this.value)"><div class="rounded-xl border border-gray-100 bg-white p-2.5 text-center peer-checked:border-lila-300 peer-checked:ring-2 peer-checked:ring-lila-100"><i data-lucide="user-plus" class="w-4 h-4 mx-auto text-lila-500 mb-1"></i><b class="text-[10px]">Compartido</b></div></label>
+      <label class="cursor-pointer"><input type="radio" name="recordOwnerType" value="other" class="peer sr-only" ${ownerType==='other'?'checked':''} onchange="toggleRecordOwnershipFieldsV175(this.form,this.value)"><div class="rounded-xl border border-gray-100 bg-white p-2.5 text-center peer-checked:border-durazno-300 peer-checked:ring-2 peer-checked:ring-durazno-100"><i data-lucide="users" class="w-4 h-4 mx-auto text-durazno-500 mb-1"></i><b class="text-[10px]">De otra persona</b></div></label>
+    </div>
+    <div data-record-owner-person-v175 class="${ownerType==='self'?'hidden':'grid'} grid-cols-2 gap-3 mt-3">
+      <div><label class="block text-[10px] font-bold text-gray-500 mb-1">Persona</label><input name="recordOwnerPerson" list="creditPeopleListV175" value="${escapeHtml(person)}" placeholder="Ej. Moni, Mamá, Axel" class="w-full border border-gray-100 rounded-xl px-3 py-2.5 text-sm bg-white"><datalist id="creditPeopleListV175">${known.map(p=>`<option value="${escapeHtml(p)}"></option>`).join('')}</datalist></div>
+      <div data-record-owner-shared-v175 class="${ownerType==='shared'?'':'hidden'}"><label class="block text-[10px] font-bold text-gray-500 mb-1">Parte que le corresponde</label><input type="number" step="any" min="0" name="recordSharedOtherAmount" value="${sharedOther||''}" placeholder="Monto total de esa persona" class="w-full border border-lila-100 rounded-xl px-3 py-2.5 text-sm bg-white"><p class="text-[8.5px] text-gray-400 mt-1">En pagos a meses es su parte del total de la compra.</p></div>
+    </div>
+  </section>`;
+  if(anchor)anchor.insertAdjacentHTML('afterend',html);else form.insertAdjacentHTML('afterbegin',html);
+  lucide.createIcons();
+}
+
+openRecordModal = function(type,id='',presetPerson=''){
+  _openRecordModalV175(type,id);
+  setTimeout(()=>injectRecordOwnershipV175(type,id,presetPerson),0);
+};
+
+function getBudgetExpenseAccountV175(item,collection){
+  const accountId=collection==='installments'?(item.purchaseAccountId||resolveAccountIdByReference(item.purchaseCard)):(item.cardAccountId||resolveAccountIdByReference(item.card));
+  return (state.accounts||[]).find(a=>String(a.id)===String(accountId||''))||null;
+}
+function removeBudgetOwnershipCreditMovementV175(item){
+  const mvId=item?.sourceCreditMovementId;if(!mvId)return;
+  const mv=(state.creditMovements||[]).find(m=>String(m.id)===String(mvId));
+  if(mv&&mv.sourceBudgetManagedV175){
+    state.creditMovements=(state.creditMovements||[]).filter(m=>String(m.id)!==String(mvId));
+    state.creditReceipts=(state.creditReceipts||[]).filter(r=>String(r.movementId)!==String(mvId));
+  }
+  item.sourceCreditMovementId='';
+}
+function syncBudgetOwnershipToCreditV175(item,collection){
+  if(!item)return;
+  const ownerType=['self','other','shared'].includes(item.ownerType)?item.ownerType:'self';
+  if(ownerType==='self'){removeBudgetOwnershipCreditMovementV175(item);return;}
+  const account=getBudgetExpenseAccountV175(item,collection);
+  if(!account||!isCreditAccount(account)){
+    removeBudgetOwnershipCreditMovementV175(item);
+    return;
+  }
+  const card=getCreditCards(true).find(c=>String(c.accountId)===String(account.id));if(!card)return;
+  let mv=(state.creditMovements||[]).find(m=>String(m.id)===String(item.sourceCreditMovementId||''));
+  if(!mv)mv=(state.creditMovements||[]).find(m=>m.sourceBudgetManagedV175&&String(m.sourceBudgetItemId)===String(item.id)&&m.sourceBudgetCollection===collection);
+  const total=collection==='installments'?(parseFloat(item.totalAmount)||0):(parseFloat(item.amount)||0);
+  const months=collection==='installments'?Math.max(1,parseInt(item.totalMonths)||1):1;
+  const monthly=collection==='installments'?(parseFloat(item.amount)||total/months):total;
+  const startMonth=collection==='installments'||collection==='fixed'?(parseInt(item.startMonth)>=0?parseInt(item.startMonth):parseInt(item.month)||state.currentMonth):(parseInt(item.month)>=0?parseInt(item.month):state.currentMonth);
+  const startYear=parseInt(collection==='installments'||collection==='fixed'?item.startYear:item.year)||state.currentYear;
+  const person=String(item.person||'Otra persona').trim()||'Otra persona';
+  const sharedOtherAmount=ownerType==='shared'?Math.max(0,Math.min(total,parseFloat(item.sharedOtherAmount)||0)):(ownerType==='other'?total:0);
+  const payload={sourceBudgetManagedV175:true,sourceBudgetItemId:item.id,sourceBudgetCollection:collection,budgetCollection:collection,budgetRecordId:item.id,cardId:card.id,accountId:card.accountId,ownerType,person,sharedOtherAmount,concept:item.concept||'-',purchaseDate:isoDate(startYear,startMonth,Math.max(1,Math.min(28,parseInt(item.date)||1))),purchaseType:collection==='installments'?'installments':'single',totalAmount:total,months,monthlyAmount:monthly,startMonth,startYear,setAsideMode:String(item.splitMode||item.apartPlan||'').toLowerCase().includes('mensual')?'monthly':'biweekly',setAsideAmountsOwn:true,budgetType:collection==='fixed'?'fixed':collection==='installments'?'installments':'variable',notes:`Desde ${collection==='installments'?'Pagos a meses':collection==='fixed'?'Pagos fijos':'Pagos variados'}`,monthlyStatus:mv?.monthlyStatus||{}};
+  if(mv)Object.assign(mv,payload);else{mv={id:uid(),...payload};state.creditMovements.push(mv);}
+  item.sourceCreditMovementId=mv.id;
+  upsertCreditPerson(person,card.id);
+}
+
+saveRecordForm = function(event,type,id=''){
+  const form=event.target,fd=new FormData(form),ownerType=fd.get('recordOwnerType')||'self',person=String(fd.get('recordOwnerPerson')||'').trim(),shared=parseFloat(fd.get('recordSharedOtherAmount'))||0;
+  if(ownerType!=='self'&&!person){event.preventDefault();alert('Indica a qué persona corresponde este gasto.');return;}
+  const total=type==='installment'?(parseFloat(fd.get('totalAmount'))||0):(parseFloat(fd.get('amount'))||0);
+  if(ownerType==='shared'&&(shared<=0||shared>total)){event.preventDefault();alert('En un gasto compartido indica una parte válida para la otra persona, mayor a $0 y no mayor al total.');return;}
+  const collection=getRecordCollectionV175(type);
+  _saveRecordFormV175(event,type,id);
+  const item=id?(state[collection]||[]).find(x=>String(x.id)===String(id)):(state[collection]||[]).at(-1);
+  if(!item)return;
+  item.ownerType=ownerType;item.person=ownerType==='self'?'Yo':person;item.sharedOtherAmount=ownerType==='shared'?shared:(ownerType==='other'?total:0);
+  syncBudgetOwnershipToCreditV175(item,collection);
+  saveState();render();
+};
+
+openCreditMovementModal = function(cardId,id='',presetPerson=''){
+  const mv=id?(state.creditMovements||[]).find(m=>String(m.id)===String(id)):null;
+  if(mv?.sourceBudgetManagedV175&&mv.sourceBudgetCollection&&mv.sourceBudgetItemId){
+    const type=mv.sourceBudgetCollection==='installments'?'installment':mv.sourceBudgetCollection==='fixed'?'fixed':'variable';
+    openRecordModal(type,mv.sourceBudgetItemId,mv.person||'');return;
+  }
+  _openCreditMovementModalV175(cardId,id,presetPerson);
+};
+
+function chooseThirdPartyPurchaseCardV175(cardId,encodedPerson=''){
+  const person=encodedPerson?decodeURIComponent(encodedPerson):'';
+  _openCreditMovementModalV175(cardId,'',person);
+  if(!person){
+    const form=document.querySelector('#modalContent form[data-credit-card-id]');if(!form)return;
+    const other=form.querySelector('input[name="ownerType"][value="other"]');if(other){other.checked=true;toggleCreditOwnerFields('other');}
+    const choice=form.querySelector('[name="personChoice"]');if(choice){choice.value='new';toggleCreditPersonField('new');}
+    const input=form.querySelector('[name="person"]');if(input)input.value='';
+  }
+}
+function openThirdPartyPurchasePickerV175(encodedPerson=''){
+  const person=encodedPerson?decodeURIComponent(encodedPerson):'',cards=getCreditCards(true).filter(c=>!getAccountForCreditCardId(c.id)?.archived);
+  if(!cards.length){alert('Primero agrega al menos una tarjeta de crédito en Configuración.');return;}
+  document.getElementById('modalContent').className='bg-white rounded-2xl w-full max-w-2xl max-h-[90%] overflow-y-auto card-shadow';
+  document.getElementById('modalContent').innerHTML=`<div class="p-5"><div class="flex items-start justify-between gap-3 mb-4"><div><h3 class="font-extrabold text-gray-800">Añadir compra ${person?`para ${escapeHtml(person)}`:'de otra persona / compartida'}</h3><p class="text-[11px] text-gray-400 mt-1">Primero elige la tarjeta donde vive la deuda. Después podrás indicar si es de tercero o compartida, si va a meses y cuánto corresponde a cada persona.</p></div><button onclick="closeModal()" class="text-xl text-gray-400">×</button></div><div class="grid grid-cols-2 gap-3">${cards.map(c=>`<button type="button" onclick="chooseThirdPartyPurchaseCardV175('${c.id}','${person?encodeURIComponent(person):''}')" class="rounded-2xl border border-gray-100 p-3.5 text-left hover:border-lila-200 hover:bg-lila-50/30 transition"><div class="flex items-center gap-3">${cardLogoHtml(c,'detail')}<div><div class="text-sm font-extrabold text-gray-800">${escapeHtml(c.name)}</div><div class="text-[9px] text-gray-400">Registrar compra en esta tarjeta</div></div></div></button>`).join('')}</div></div>`;
+  document.getElementById('modal').classList.remove('hidden');lucide.createIcons();
+}
+
+function injectCreditPeopleButtonsV175(){
+  const main=document.getElementById('mainContent');if(!main)return;
+  const first=main.firstElementChild;
+  if(first&&!first.querySelector('[data-add-third-v175]')){
+    const toggle=[...first.querySelectorAll('div')].find(d=>d.textContent?.trim().includes('Por tarjeta')&&d.textContent?.trim().includes('Por persona'));
+    if(toggle)toggle.insertAdjacentHTML('beforebegin',`<button data-add-third-v175 onclick="openThirdPartyPurchasePickerV175()" class="px-3 py-2 rounded-xl bg-lila-500 text-white text-xs font-bold flex items-center gap-1.5"><i data-lucide="plus" class="w-3.5 h-3.5"></i>Añadir compra de tercero</button>`);
+  }
+  main.querySelectorAll('button[onclick^="openCreditPersonDetailV168"]').forEach(btn=>{
+    const m=btn.getAttribute('onclick')?.match(/openCreditPersonDetailV168\('([^']+)'\)/);if(!m)return;
+    const row=btn.parentElement;if(row&&!row.querySelector('[data-add-person-purchase-v175]'))btn.insertAdjacentHTML('afterend',`<button data-add-person-purchase-v175 onclick="openThirdPartyPurchasePickerV175('${m[1]}')" class="px-3 py-1.5 rounded-lg bg-azul-50 text-azul-600 border border-azul-100 text-[9.5px] font-bold">+ Añadir compra</button>`);
+  });
+  lucide.createIcons();
+}
+renderCreditPeopleView = function(){_renderCreditPeopleViewV175();injectCreditPeopleButtonsV175();};
+
+function injectCreditPersonDetailButtonsV175(){
+  const person=currentCreditPersonDetailV168,main=document.getElementById('mainContent');if(!person||!main)return;
+  const encoded=encodeURIComponent(person),top=main.firstElementChild;
+  if(top&&!top.querySelector('[data-add-detail-purchase-v175]')){
+    const action=[...top.querySelectorAll('div')].find(d=>d.querySelector('button[onclick^="openCreditPersonPaymentModalV168"]'));
+    if(action)action.insertAdjacentHTML('afterbegin',`<button data-add-detail-purchase-v175 onclick="openThirdPartyPurchasePickerV175('${encoded}')" class="px-3 py-2 rounded-xl bg-lila-500 text-white text-xs font-bold flex items-center gap-1.5"><i data-lucide="plus" class="w-3.5 h-3.5"></i>Añadir compra</button>`);
+  }
+  const breakdown=document.getElementById('creditPersonDetailBreakdownV168');
+  if(breakdown&&!breakdown.querySelector('[data-add-breakdown-purchase-v175]')){
+    const head=breakdown.firstElementChild;
+    if(head){const controls=head.lastElementChild;controls?.insertAdjacentHTML('beforebegin',`<button data-add-breakdown-purchase-v175 onclick="openThirdPartyPurchasePickerV175('${encoded}')" class="px-2.5 py-1.5 rounded-lg bg-lila-50 border border-lila-100 text-lila-600 text-[9px] font-bold">+ Añadir compra</button>`);}
+  }
+  lucide.createIcons();
+}
+renderCreditPersonDetailViewV168 = function(){_renderCreditPersonDetailViewV175();injectCreditPersonDetailButtonsV175();};
+
+confirmDelete = function(id,col){
+  const item=(state[col]||[]).find(x=>String(x.id)===String(id)),mvId=item?.sourceCreditMovementId||'';
+  _confirmDeleteV175(id,col);
+  const btn=document.getElementById('confirmDeleteBtn');if(!btn||!mvId)return;
+  const original=btn.onclick;btn.onclick=()=>{original?.();state.creditMovements=(state.creditMovements||[]).filter(m=>String(m.id)!==String(mvId));state.creditReceipts=(state.creditReceipts||[]).filter(r=>String(r.movementId)!==String(mvId));saveState();render();};
+};
+
+// Migra la propiedad ya guardada en registros presupuestales si existiera de versiones previas.
+['fixed','installments','variable'].forEach(col=>(state[col]||[]).forEach(item=>{if(item.ownerType&&item.ownerType!=='self')syncBudgetOwnershipToCreditV175(item,col);}));
+saveState();
+
 runSmokeTests();
 render();
 </script>
 
 </body>
-<!-- v170 final: monthly card detail + reversible bulk checks -->
+<!-- v175: compras de terceros integradas en presupuesto y personas -->
 </html>
