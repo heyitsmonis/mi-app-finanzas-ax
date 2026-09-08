@@ -43,6 +43,36 @@
     .cal-dot { width:6px; height:6px; border-radius:50%; display:inline-block; }
     .progress-bar { transition:width .3s; }
     input, select, textarea { font-family:'DM Sans', sans-serif; }
+
+    /* Tarjetas: legibilidad +1 px en todo el módulo, sin afectar el resto de la app */
+    .credit-ui [class~="text-[7.5px]"] { font-size:8.5px !important; }
+    .credit-ui [class~="text-[8px]"] { font-size:9px !important; }
+    .credit-ui [class~="text-[8.5px]"] { font-size:9.5px !important; }
+    .credit-ui [class~="text-[9px]"] { font-size:10px !important; }
+    .credit-ui [class~="text-[9.5px]"] { font-size:10.5px !important; }
+    .credit-ui [class~="text-[10px]"] { font-size:11px !important; }
+    .credit-ui [class~="text-[10.5px]"] { font-size:11.5px !important; }
+    .credit-ui [class~="text-[11px]"] { font-size:12px !important; }
+    .credit-ui [class~="text-[11.5px]"] { font-size:12.5px !important; }
+    .credit-ui [class~="text-[12px]"] { font-size:13px !important; }
+    .credit-ui [class~="text-[12.5px]"] { font-size:13.5px !important; }
+    .credit-ui [class~="text-[13px]"] { font-size:14px !important; }
+    .credit-ui [class~="text-[14px]"] { font-size:15px !important; }
+    .credit-ui [class~="text-[15px]"] { font-size:16px !important; }
+    .credit-ui [class~="text-[16px]"] { font-size:17px !important; }
+    .credit-ui [class~="text-[17px]"] { font-size:18px !important; }
+    .credit-ui [class~="text-[18px]"] { font-size:19px !important; }
+    .credit-ui [class~="text-[19px]"] { font-size:20px !important; }
+    .credit-ui [class~="text-[20px]"] { font-size:21px !important; }
+    .credit-ui [class~="text-[22px]"] { font-size:23px !important; }
+    .credit-ui [class~="text-[32px]"] { font-size:33px !important; }
+    .credit-ui .text-xs { font-size:13px !important; line-height:1.25rem !important; }
+    .credit-ui .text-sm { font-size:15px !important; line-height:1.35rem !important; }
+    .credit-ui .text-base { font-size:17px !important; line-height:1.55rem !important; }
+    .credit-ui .text-lg { font-size:19px !important; line-height:1.65rem !important; }
+    .credit-ui .text-xl { font-size:21px !important; line-height:1.75rem !important; }
+    .credit-ui .text-2xl { font-size:25px !important; line-height:2rem !important; }
+    .credit-ui .text-3xl { font-size:31px !important; line-height:2.25rem !important; }
   </style>
 </head>
 <body class="h-full bg-gray-50 font-main text-gray-700">
@@ -854,7 +884,7 @@ function getPaymentStatusForQuincena(item,q){if(getPaymentCollection(item)==='go
 function getPaymentStatusForDay(item,day){const c=getPaymentCollection(item);if(c==='savings')return 'apartado';if(item.paid)return 'pagado';const q=day<=15?1:2;if(isSetAside(item,q))return 'apartado';return 'pendiente';}
 function getFinalStatusLabel(item){const c=getPaymentCollection(item);if(c==='savings')return 'Apartado';if(item.paid)return 'Pagado';if(item.apartadoQ1||item.apartadoQ2)return 'Apartado';return 'Pendiente';}
 
-function render(){renderMonthTabs();if(currentView==='dashboard')renderDashboardView();else if(currentView==='monthly')renderMonthlyView();else if(currentView==='biweekly')renderBiweeklyView();else if(currentView==='fixed')renderFixedView();else if(currentView==='installments')renderInstallmentsView();else if(currentView==='variable')renderVariableView();else if(currentView==='savings')renderSavingsView();else if(currentView==='creditcards')renderCreditCardsView();else if(currentView==='creditPeople')renderCreditPeopleView();else if(currentView==='creditPersonDetail')renderCreditPersonDetailViewV168();else if(currentView==='creditCardDetail')renderCreditCardDetailView();else if(currentView==='annual')renderAnnualView();else if(currentView==='config')renderConfigView();renderSidebar();const navView=['creditPeople','creditPersonDetail','creditCardDetail'].includes(currentView)?'creditcards':currentView;document.querySelectorAll('.sidebar-item').forEach(b=>b.classList.toggle('active',b.dataset.view===navView));lucide.createIcons();}
+function render(){renderMonthTabs();const mainContentEl=document.getElementById('mainContent');if(mainContentEl)mainContentEl.classList.toggle('credit-ui',['creditcards','creditPeople','creditPersonDetail','creditCardDetail'].includes(currentView));if(currentView==='dashboard')renderDashboardView();else if(currentView==='monthly')renderMonthlyView();else if(currentView==='biweekly')renderBiweeklyView();else if(currentView==='fixed')renderFixedView();else if(currentView==='installments')renderInstallmentsView();else if(currentView==='variable')renderVariableView();else if(currentView==='savings')renderSavingsView();else if(currentView==='creditcards')renderCreditCardsView();else if(currentView==='creditPeople')renderCreditPeopleView();else if(currentView==='creditPersonDetail')renderCreditPersonDetailViewV168();else if(currentView==='creditCardDetail')renderCreditCardDetailView();else if(currentView==='annual')renderAnnualView();else if(currentView==='config')renderConfigView();renderSidebar();const navView=['creditPeople','creditPersonDetail','creditCardDetail'].includes(currentView)?'creditcards':currentView;document.querySelectorAll('.sidebar-item').forEach(b=>b.classList.toggle('active',b.dataset.view===navView));lucide.createIcons();}
 function renderMonthTabs(){
   const monthButtons=MONTHS.map((m,i)=>`<button class="month-tab px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${i===state.currentMonth?'active':''}" onclick="setMonth(${i})">${m}</button>`).join('');
   document.getElementById('monthTabs').innerHTML=`
@@ -7246,6 +7276,108 @@ renderCreditPersonDetailViewV168 = function(){
 
   <div class="bg-white border border-gray-100 rounded-2xl card-shadow p-4"><div class="flex items-center justify-between gap-3 mb-3"><div class="flex items-center gap-2.5"><span class="w-9 h-9 rounded-xl bg-azul-50 text-azul-600 flex items-center justify-center"><i data-lucide="history" class="w-4 h-4"></i></span><div><h3 class="text-[15px] font-extrabold text-gray-800">Historial de cobros</h3><p class="text-[10px] text-gray-400">Agrupado por concepto y mensualidad para no mezclar todos los pagos en una lista corrida.</p></div></div><div class="flex items-center gap-2"><div class="bg-gray-50 rounded-xl p-1 flex gap-1"><button onclick="setCreditPersonHistoryScopeV176('month')" class="px-3 py-1.5 rounded-lg text-[9.5px] font-bold ${creditPersonHistoryScopeV176==='month'?'bg-white text-lila-500 shadow-sm':'text-gray-400'}">Este mes</button><button onclick="setCreditPersonHistoryScopeV176('all')" class="px-3 py-1.5 rounded-lg text-[9.5px] font-bold ${creditPersonHistoryScopeV176==='all'?'bg-white text-lila-500 shadow-sm':'text-gray-400'}">Todos los meses</button></div><button onclick="openCreditPersonPaymentModalV168('${encoded}','')" class="px-3 py-1.5 rounded-lg bg-menta-50 border border-menta-100 text-menta-600 text-[9.5px] font-bold inline-flex items-center gap-1"><i data-lucide="dollar-sign" class="w-3 h-3"></i>Registrar cobro</button></div></div>${historyHtml}</div>`;
   lucide.createIcons();
+};
+
+/* ===== v178 · Detalle de tarjeta más claro + historial por mes ===== */
+let creditCardHistoryScopeV178='month';
+function setCreditCardHistoryScopeV178(v){
+  creditCardHistoryScopeV178=v==='all'?'all':'month';
+  if(currentView==='creditCardDetail')renderCreditCardDetailView();
+  lucide.createIcons();
+}
+function creditMetricV178(icon,label,value,color='text-gray-800',bg='bg-white',border='border-gray-100',sub=''){
+  return `<div class="${bg} ${border} border rounded-2xl p-4 card-shadow min-w-0"><div class="flex items-center gap-3"><span class="w-10 h-10 rounded-xl bg-white/90 ${color} flex items-center justify-center shrink-0"><i data-lucide="${icon}" class="w-[18px] h-[18px]"></i></span><div class="min-w-0"><div class="text-[10.5px] text-gray-400 font-bold leading-tight">${label}</div><div class="text-[18px] leading-tight font-extrabold ${color} mt-1 truncate">${value}</div>${sub?`<div class="text-[9.5px] text-gray-400 mt-1 leading-snug">${sub}</div>`:''}</div></div></div>`;
+}
+function getCreditCardReceiptsAllV178(card){
+  return getCreditReceipts().filter(r=>{
+    const mv=getCreditMovementByIdV167(r.movementId);
+    const c=mv?getCreditCardForMovementV167(mv):null;
+    return c&&String(c.id)===String(card.id);
+  });
+}
+function getCreditCardCoverageAllocationsV178(card){
+  const out=[];
+  getCreditCoverageEvents().forEach(e=>{
+    (e.allocations||[]).forEach(a=>{
+      const mv=getCreditMovementByIdV167(a.movementId),c=mv?getCreditCardForMovementV167(mv):null;
+      if(!c||String(c.id)!==String(card.id))return;
+      out.push({event:e,allocation:a,mv,month:parseInt(a.appliesMonth),year:parseInt(a.appliesYear),amount:parseFloat(a.amount)||0});
+    });
+  });
+  return out;
+}
+function getCreditCardBankPaymentsAllV178(card){
+  return (state.creditBankPayments||[]).filter(p=>String(p.accountId)===String(card.accountId));
+}
+function getCreditEventMonthV178(rec){
+  let m=parseInt(rec?.appliesMonth),y=parseInt(rec?.appliesYear);
+  if(Number.isFinite(m)&&Number.isFinite(y))return {month:m,year:y};
+  const d=String(rec?.date||'').split('-').map(Number);
+  if(d.length>=2&&d[0]&&d[1])return {month:d[1]-1,year:d[0]};
+  return null;
+}
+function openCreditBankPaymentMonthV178(cardId,m,y){
+  const card=getCreditCards(true).find(c=>String(c.id)===String(cardId));if(!card)return;
+  const payments=getCreditCardBankPaymentsAllV178(card).filter(p=>{const per=getCreditEventMonthV178(p);return per&&per.month===m&&per.year===y;}).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  const due=getCreditCardSummary(card,m,y).monthDue,paid=payments.reduce((s,p)=>s+(parseFloat(p.amount)||0),0);
+  document.getElementById('modalContent').className='bg-white rounded-2xl w-full max-w-xl max-h-[90%] overflow-y-auto card-shadow';
+  document.getElementById('modalContent').innerHTML=`<div class="p-5"><div class="flex items-start justify-between gap-3 mb-4"><div class="flex items-center gap-3"><span class="w-10 h-10 rounded-xl bg-azul-50 text-azul-600 flex items-center justify-center"><i data-lucide="landmark" class="w-5 h-5"></i></span><div><h3 class="font-extrabold text-gray-800">Pagos a ${escapeHtml(card.name)} · ${MONTHS[m]} ${y}</h3><p class="text-[11px] text-gray-400 mt-1">Registrado ${fmt(paid)} de ${fmt(due)} correspondiente a este mes.</p></div></div><button onclick="closeModal()" class="text-xl text-gray-400">×</button></div>${payments.length?payments.map(p=>{const src=getCreditPaymentSourceAccount(p);return `<div class="flex items-center justify-between gap-3 py-3 border-b border-gray-100 last:border-0"><div class="flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg bg-menta-50 text-menta-600 flex items-center justify-center"><i data-lucide="check-circle" class="w-4 h-4"></i></span><div><div class="text-[12px] font-extrabold text-gray-700">${fmt(p.amount)}</div><div class="text-[10px] text-gray-400">${p.date?formatShortDate(p.date):'Sin fecha'}${src?` · desde ${escapeHtml(src.name)}`:''}${p.notes?` · ${escapeHtml(p.notes)}`:''}</div></div></div><button onclick="deleteCreditBankPayment('${p.id}')" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-500 text-[9.5px] font-bold inline-flex items-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i>Borrar</button></div>`;}).join(''):'<div class="py-6 text-center text-[11px] text-gray-400">No hay pagos al banco registrados en este mes.</div>'}</div>`;
+  document.getElementById('modal').classList.remove('hidden');lucide.createIcons();
+}
+function renderCreditCardBankHistoryV178(card,scope){
+  const all=getCreditCardBankPaymentsAllV178(card),idxSet=new Set();
+  all.forEach(p=>{const per=getCreditEventMonthV178(p);if(per)idxSet.add(monthIndex(per.month,per.year));});
+  if(scope==='month')idxSet.add(monthIndex(state.currentMonth,state.currentYear));
+  const indexes=[...idxSet].filter(idx=>scope==='all'||idx===monthIndex(state.currentMonth,state.currentYear)).sort((a,b)=>b-a);
+  if(!indexes.length)return `<div class="rounded-2xl bg-gray-50 border border-gray-100 p-5 text-center text-[11px] text-gray-400">Todavía no hay pagos al banco registrados.</div>`;
+  return `<div class="flex gap-2 overflow-x-auto pb-1">${indexes.map(idx=>{
+    const m=((idx%12)+12)%12,y=Math.floor(idx/12),ps=all.filter(p=>{const per=getCreditEventMonthV178(p);return per&&per.month===m&&per.year===y;}),paid=ps.reduce((s,p)=>s+(parseFloat(p.amount)||0),0),due=getCreditCardSummary(card,m,y).monthDue,full=due>0.009&&paid>=due-0.009,partial=paid>0.009&&!full;
+    const cls=full?'bg-menta-50 border-menta-100 text-menta-600':partial?'bg-miel-50 border-miel-100 text-miel-600':'bg-gray-50 border-gray-100 text-gray-500';
+    return `<button onclick="openCreditBankPaymentMonthV178('${card.id}',${m},${y})" class="min-w-[128px] rounded-xl border ${cls} px-3 py-2.5 text-left hover:shadow-sm"><div class="flex items-center justify-between gap-2"><span class="text-[10px] font-extrabold">${MONTHS[m].slice(0,3)} ${String(y).slice(-2)}</span>${full?'<i data-lucide="check-circle" class="w-4 h-4"></i>':partial?'<span class="text-[9px] font-black">PARCIAL</span>':'<span class="text-[9px] font-bold opacity-60">SIN PAGO</span>'}</div><div class="text-[13px] font-extrabold mt-1.5">${fmt(paid)}</div><div class="text-[9px] opacity-70 mt-0.5">de ${fmt(due)}</div><div class="text-[8.5px] opacity-60 mt-1">${ps.length} movimiento${ps.length===1?'':'s'}</div></button>`;
+  }).join('')}</div>`;
+}
+function renderCreditCardCoverageHistoryV178(card,scope){
+  let rows=getCreditCardCoverageAllocationsV178(card);
+  if(scope==='month')rows=rows.filter(x=>x.month===state.currentMonth&&x.year===state.currentYear);
+  if(!rows.length)return '';
+  const groups={};rows.forEach(x=>{const k=`${x.year}-${x.month}`;(groups[k]||(groups[k]=[])).push(x);});
+  return `<div class="space-y-2">${Object.entries(groups).sort((a,b)=>b[0].localeCompare(a[0])).map(([k,arr])=>{const [y,m]=k.split('-').map(Number),total=arr.reduce((s,x)=>s+x.amount,0);return `<div class="rounded-xl border border-miel-100 bg-miel-50/60 p-3"><div class="flex items-center justify-between gap-3"><div><div class="text-[11px] font-extrabold text-gray-700">${MONTHS[m]} ${y}</div><div class="text-[9.5px] text-gray-500 mt-0.5">${arr.map(x=>escapeHtml(x.mv?.concept||x.event?.person||'Cobertura')).join(' · ')}</div></div><div class="text-right"><div class="text-[9px] text-gray-400">Cubierto / refinanciado</div><div class="text-[12px] font-extrabold text-miel-600">${fmt(total)}</div></div></div></div>`;}).join('')}</div>`;
+}
+function renderCreditCardHistoryV178(card){
+  const scope=creditCardHistoryScopeV178;
+  const receiptMovs=getCreditMovements().filter(mv=>mv.ownerType!=='self'&&String(getCreditCardForMovementV167(mv)?.id||'')===String(card.id)&&getCreditReceipts().some(r=>String(r.movementId)===String(mv.id))).sort((a,b)=>String(a.concept||'').localeCompare(String(b.concept||'')));
+  const receiptCards=receiptMovs.map(mv=>renderCreditHistoryConceptV176(mv,scope)).filter(Boolean).join('');
+  const bankAll=getCreditCardBankPaymentsAllV178(card),receiptsAll=getCreditCardReceiptsAllV178(card),coverageAll=getCreditCardCoverageAllocationsV178(card);
+  const monthIdx=monthIndex(state.currentMonth,state.currentYear);
+  const countMonth=(arr,getPer)=>arr.filter(x=>{const p=getPer(x);return p&&monthIndex(p.month,p.year)===monthIdx;}).length;
+  const bankCount=scope==='month'?countMonth(bankAll,getCreditEventMonthV178):bankAll.length;
+  const receiptCount=scope==='month'?countMonth(receiptsAll,getCreditEventMonthV178):receiptsAll.length;
+  const coverageCount=scope==='month'?coverageAll.filter(x=>x.month===state.currentMonth&&x.year===state.currentYear).length:coverageAll.length;
+  return `<div class="space-y-5"><div class="flex items-start justify-between gap-4"><div class="flex items-start gap-3"><span class="w-10 h-10 rounded-xl bg-azul-50 text-azul-600 flex items-center justify-center shrink-0"><i data-lucide="history" class="w-5 h-5"></i></span><div><h4 class="text-[16px] font-extrabold text-gray-800">Historial de ${escapeHtml(card.name)}</h4><p class="text-[11px] text-gray-400 mt-1">Pagos al banco y cobros de terceros organizados por mes. Ya no se mezclan en una lista corrida.</p></div></div><div class="bg-gray-50 rounded-xl p-1 flex gap-1 shrink-0"><button onclick="setCreditCardHistoryScopeV178('month')" class="px-3 py-2 rounded-lg text-[10px] font-bold ${scope==='month'?'bg-white text-lila-500 shadow-sm':'text-gray-400'}">${MONTHS[state.currentMonth]} ${state.currentYear}</button><button onclick="setCreditCardHistoryScopeV178('all')" class="px-3 py-2 rounded-lg text-[10px] font-bold ${scope==='all'?'bg-white text-lila-500 shadow-sm':'text-gray-400'}">Todo el historial</button></div></div><div class="grid grid-cols-3 gap-2">${[['landmark','Pagos al banco',bankCount,'bg-azul-50 text-azul-600'],['receipt','Cobros de terceros',receiptCount,'bg-menta-50 text-menta-600'],['arrow-right-left','Coberturas / refinanciado',coverageCount,'bg-miel-50 text-miel-600']].map(([i,l,n,c])=>`<div class="rounded-xl bg-gray-50 border border-gray-100 px-3 py-2.5 flex items-center gap-2.5"><span class="w-8 h-8 rounded-lg ${c} flex items-center justify-center"><i data-lucide="${i}" class="w-4 h-4"></i></span><div><div class="text-[9.5px] text-gray-400">${l}</div><div class="text-[13px] font-extrabold text-gray-700">${n}</div></div></div>`).join('')}</div><section><div class="flex items-center justify-between mb-2.5"><div><h5 class="text-[13px] font-extrabold text-gray-800">Pagos al banco</h5><p class="text-[10px] text-gray-400">Cada cuadro representa el pago correspondiente a un mes.</p></div><button onclick="openCreditBankPaymentModal('${card.id}')" class="px-3 py-1.5 rounded-lg bg-azul-50 border border-azul-100 text-azul-600 text-[10px] font-bold inline-flex items-center gap-1.5"><i data-lucide="plus" class="w-3 h-3"></i>Registrar pago</button></div>${renderCreditCardBankHistoryV178(card,scope)}</section><section><div class="mb-2.5"><h5 class="text-[13px] font-extrabold text-gray-800">Cobros de terceros</h5><p class="text-[10px] text-gray-400">Cada concepto conserva sus mensualidades y cuánto se recuperó en cada una.</p></div>${receiptCards?`<div class="grid grid-cols-1 gap-3">${receiptCards}</div>`:`<div class="rounded-2xl bg-gray-50 border border-gray-100 p-5 text-center text-[11px] text-gray-400">${scope==='month'?`No hay cobros de terceros registrados para ${MONTHS[state.currentMonth]} ${state.currentYear}.`:'Todavía no hay cobros de terceros registrados en esta tarjeta.'}</div>`}</section>${coverageCount?`<section><div class="mb-2.5"><h5 class="text-[13px] font-extrabold text-gray-800">Faltantes cubiertos o refinanciados</h5><p class="text-[10px] text-gray-400">Dinero que tuviste que poner o mover a otra deuda porque un tercero no pagó completo.</p></div>${renderCreditCardCoverageHistoryV178(card,scope)}</section>`:''}</div>`;
+}
+function renderCreditCardSummaryV178(card){
+  const s=getCreditCardSummary(card),comp=getCreditCardMonthCompositionV167(card),debt=getCreditEffectiveDebtV167(card),aside=getCreditCardSetAsideSummary(card),monthToCollect=getCreditCardMovements(card.id).reduce((sum,mv)=>sum+getCreditMovementOpenForMonth(mv,state.currentMonth,state.currentYear),0),received=Math.max(0,comp.thirdResponsibility-monthToCollect),action=monthToCollect>0.009?{label:'Tienes dinero por recuperar',text:`${fmt(monthToCollect)} de compras de terceros siguen pendientes de cobro este mes.`,icon:'receipt',cls:'bg-durazno-50 text-durazno-600 border-durazno-100',button:`<button onclick="setCreditDetailTab('personas')" class="px-4 py-2.5 rounded-xl bg-white text-durazno-600 text-[10.5px] font-bold">Ver personas y cobros</button>`}:s.bankPending>0.009?{label:'Todavía falta pagar al banco',text:`Quedan ${fmt(s.bankPending)} del compromiso de ${MONTHS[state.currentMonth]}.`,icon:'landmark',cls:'bg-azul-50 text-azul-600 border-azul-100',button:`<button onclick="openCreditBankPaymentModal('${card.id}')" class="px-4 py-2.5 rounded-xl bg-white text-azul-600 text-[10.5px] font-bold">Registrar pago</button>`}:{label:'Este mes está bajo control',text:`No hay cobros ni pagos pendientes para ${MONTHS[state.currentMonth]}.`,icon:'check-circle',cls:'bg-menta-50 text-menta-600 border-menta-100',button:''};
+  const collectPct=comp.thirdResponsibility?Math.min(100,Math.round(received/comp.thirdResponsibility*100)):100,asidePct=aside.planned?Math.min(100,Math.round(aside.saved/aside.planned*100)):100,bankPct=s.monthDue?Math.min(100,Math.round(s.paidBank/s.monthDue*100)):100;
+  const prog=(label,value,detail,pct,color)=>`<div class="rounded-2xl border border-gray-100 bg-white p-4"><div class="flex items-center justify-between gap-3 mb-2"><div class="text-[11px] font-bold text-gray-600">${label}</div><div class="text-[12px] font-extrabold text-gray-800">${value}</div></div><div class="h-2 rounded-full bg-gray-100 overflow-hidden"><div class="h-full rounded-full ${color}" style="width:${Math.max(0,Math.min(100,pct))}%"></div></div><div class="text-[9.5px] text-gray-400 mt-1.5">${detail}</div></div>`;
+  return `<div class="space-y-4"><div class="rounded-2xl border ${action.cls} px-5 py-4 flex items-center justify-between gap-4"><div class="flex items-center gap-3"><span class="w-11 h-11 rounded-xl bg-white/90 flex items-center justify-center shrink-0"><i data-lucide="${action.icon}" class="w-5 h-5"></i></span><div><div class="text-[14px] font-extrabold">${action.label}</div><div class="text-[12px] mt-1 leading-snug opacity-90">${action.text}</div></div></div>${action.button}</div><div class="grid grid-cols-3 gap-3">${prog('Dinero apartado',fmt(aside.saved),`${fmt(aside.saved)} de ${fmt(aside.planned)} planeados`,asidePct,'bg-azul-400')}${prog('Recuperado de terceros',fmt(received),`${fmt(received)} de ${fmt(comp.thirdResponsibility)} correspondientes al mes`,collectPct,'bg-durazno-400')}${prog('Pagado al banco',fmt(s.paidBank),`${fmt(s.paidBank)} de ${fmt(s.monthDue)} del mes`,bankPct,'bg-menta-400')}</div><div class="grid grid-cols-2 gap-3"><div class="rounded-2xl border border-gray-100 bg-white p-4"><div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Saldo total de la tarjeta</div><div class="text-[26px] font-extrabold text-gray-800 mt-1">${fmt(debt)}</div><p class="text-[10.5px] text-gray-400 mt-2">Es toda la deuda pendiente de ${escapeHtml(card.name)}, no solo la de ${MONTHS[state.currentMonth]}.</p></div><div class="rounded-2xl border border-lila-100 bg-lila-50/60 p-4"><div class="text-[10px] font-bold text-lila-500 uppercase tracking-wide">Compromiso de ${MONTHS[state.currentMonth]} ${state.currentYear}</div><div class="text-[26px] font-extrabold text-gray-800 mt-1">${fmt(s.monthDue)}</div><div class="grid grid-cols-3 gap-2 mt-3"><div><div class="text-[9px] text-gray-400">Mío</div><b class="text-[11px] text-azul-600">${fmt(comp.ownResponsibility)}</b></div><div><div class="text-[9px] text-gray-400">De terceros</div><b class="text-[11px] text-durazno-600">${fmt(comp.thirdResponsibility)}</b></div><div><div class="text-[9px] text-gray-400">Por recuperar</div><b class="text-[11px] text-miel-600">${fmt(monthToCollect)}</b></div></div></div></div><div class="rounded-2xl border border-gray-100 bg-white p-4"><div class="flex items-center justify-between gap-3 mb-3"><div><h4 class="text-[14px] font-extrabold text-gray-800">Qué significa este mes</h4><p class="text-[10.5px] text-gray-400 mt-0.5">La tarjeta puede tener una deuda total mayor, pero aquí solo administras lo que corresponde a ${MONTHS[state.currentMonth]}.</p></div><button onclick="setCreditDetailTab('movimientos')" class="px-3 py-2 rounded-xl bg-lila-50 border border-lila-100 text-lila-600 text-[10px] font-bold">Ver conceptos del mes</button></div><div class="grid grid-cols-4 gap-2">${[['Tu responsabilidad',fmt(comp.ownResponsibility),'bg-azul-50 text-azul-600'],['Responsabilidad de terceros',fmt(comp.thirdResponsibility),'bg-durazno-50 text-durazno-600'],['Ya recuperaste',fmt(received),'bg-menta-50 text-menta-600'],['Aún falta recuperar',fmt(monthToCollect),'bg-miel-50 text-miel-600']].map(([l,v,c])=>`<div class="rounded-xl ${c} p-3"><div class="text-[9.5px] opacity-70">${l}</div><div class="text-[13px] font-extrabold mt-1">${v}</div></div>`).join('')}</div></div></div>`;
+}
+const _renderCreditDetailTabContentV177_forV178=renderCreditDetailTabContentV167;
+renderCreditDetailTabContentV167=function(card,tab='resumen'){
+  if(tab==='resumen')return renderCreditCardSummaryV178(card);
+  if(tab==='historial')return renderCreditCardHistoryV178(card);
+  return _renderCreditDetailTabContentV177_forV178(card,tab);
+};
+renderCreditCardDetailView=function(){
+  const card=getCreditCards(true).find(c=>c.id===currentCreditCardId);if(!card){currentView='creditcards';renderCreditCardsView();return;}
+  const s=getCreditCardSummary(card),comp=getCreditCardMonthCompositionV167(card),debt=getCreditEffectiveDebtV167(card),monthToCollect=getCreditCardMovements(card.id).reduce((sum,mv)=>sum+getCreditMovementOpenForMonth(mv,state.currentMonth,state.currentYear),0);
+  const received=Math.max(0,comp.thirdResponsibility-monthToCollect),action=monthToCollect>0.009?{label:'Falta recuperar dinero',text:`Recupera ${fmt(monthToCollect)} de terceros este mes.`,cls:'bg-durazno-50 text-durazno-600 border-durazno-100',icon:'receipt'}:s.bankPending>0.009?{label:'Falta pagar al banco',text:`Quedan ${fmt(s.bankPending)} por liquidar del compromiso de ${MONTHS[state.currentMonth]}.`,cls:'bg-azul-50 text-azul-600 border-azul-100',icon:'landmark'}:{label:'Mes al día',text:`No hay acciones pendientes para ${MONTHS[state.currentMonth]}.`,cls:'bg-menta-50 text-menta-600 border-menta-100',icon:'check-circle'};
+  document.getElementById('mainContent').innerHTML=`<div class="flex items-start justify-between gap-4 mb-4"><div><button onclick="currentView='creditcards';render()" class="text-[11px] text-gray-400 hover:text-lila-500 mb-3 flex items-center gap-1"><i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>Volver al Centro de deuda</button><div class="flex items-center gap-3">${cardLogoHtml(card,'detail')}<div><div class="flex items-center gap-2.5 flex-wrap"><h2 class="text-[28px] leading-none font-extrabold text-gray-800">${escapeHtml(card.name)}</h2><span class="px-3 py-1 rounded-full bg-lila-50 border border-lila-100 text-lila-600 text-[10.5px] font-extrabold">Viendo ${MONTHS[state.currentMonth]} ${state.currentYear}</span></div><p class="text-[12px] text-gray-400 mt-2">Control de deuda y pagos · corte día ${card.cutDay} · pago día ${card.payDay}</p></div></div></div><div class="flex gap-2 pt-6"><button onclick="openAccountModal('${card.accountId}','crédito')" class="px-3.5 py-2.5 rounded-xl border border-gray-100 bg-white text-gray-600 text-[11px] font-bold flex items-center gap-1.5"><i data-lucide="pencil" class="w-4 h-4"></i>Editar tarjeta</button><button onclick="openCreditBankPaymentModal('${card.id}')" class="px-3.5 py-2.5 rounded-xl bg-azul-50 border border-azul-100 text-azul-600 text-[11px] font-bold flex items-center gap-1.5"><i data-lucide="landmark" class="w-4 h-4"></i>Pagar banco</button><button onclick="openCreditMovementModal('${card.id}')" class="px-3.5 py-2.5 rounded-xl bg-lila-500 text-white text-[11px] font-bold flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Registrar compra</button></div></div><div class="rounded-2xl bg-white border border-gray-100 px-4 py-3 mb-3 flex items-center justify-between gap-4"><div><div class="text-[12px] font-extrabold text-gray-700">Resumen de ${MONTHS[state.currentMonth]} ${state.currentYear}</div><div class="text-[10.5px] text-gray-400 mt-1">Solo <b class="text-gray-500">Saldo total</b> es acumulado. Los otros importes corresponden únicamente al mes seleccionado.</div></div><span class="px-3 py-1.5 rounded-xl bg-gray-50 text-[10px] text-gray-500 font-bold shrink-0">${comp.counts.own+comp.counts.shared+comp.counts.other+comp.counts.transfer} conceptos del mes</span></div><div class="grid grid-cols-6 gap-3 mb-4">${creditMetricV178('wallet','Saldo total',fmt(debt),'text-gray-800','bg-white','border-gray-100','Toda la deuda pendiente')}${creditMetricV178('calendar-check','Pago del mes',fmt(s.monthDue),'text-lila-500','bg-lila-50','border-lila-100',MONTHS[state.currentMonth])}${creditMetricV178('user','Mi parte',fmt(comp.ownResponsibility),'text-azul-600','bg-azul-50','border-azul-100','Responsabilidad propia')}${creditMetricV178('user-plus','Compartido',fmt(comp.shared),'text-lila-600','bg-lila-50','border-lila-100','Total de compras compartidas')}${creditMetricV178('users','De terceros',fmt(comp.thirdResponsibility),'text-durazno-600','bg-durazno-50','border-durazno-100','Lo que corresponde a otras personas')}${creditMetricV178('receipt','Por recuperar',fmt(monthToCollect),'text-miel-600','bg-miel-50','border-miel-100',received>0?`Ya recuperaste ${fmt(received)}`:'Todavía no has recuperado dinero')}</div><div class="rounded-2xl border ${action.cls} px-5 py-4 mb-4 flex items-center justify-between gap-4"><div class="flex items-center gap-3"><span class="w-11 h-11 rounded-xl bg-white/90 flex items-center justify-center shrink-0"><i data-lucide="${action.icon}" class="w-5 h-5"></i></span><div><div class="text-[14px] font-extrabold">${action.label}</div><div class="text-[12.5px] mt-1 leading-snug opacity-95">${action.text}</div></div></div>${monthToCollect>0.009?`<button onclick="setCreditDetailTab('personas')" class="px-4 py-2.5 rounded-xl bg-white/95 text-durazno-600 text-[10.5px] font-bold inline-flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5"></i>Ver personas y cobros</button>`:s.bankPending>0.009?`<button onclick="openCreditBankPaymentModal('${card.id}')" class="px-4 py-2.5 rounded-xl bg-white/95 text-azul-600 text-[10.5px] font-bold inline-flex items-center gap-1.5"><i data-lucide="landmark" class="w-3.5 h-3.5"></i>Registrar pago</button>`:''}</div><div class="bg-white rounded-2xl border border-gray-100 card-shadow overflow-hidden"><div class="grid grid-cols-4 bg-gray-50 border-b border-gray-100">${[['resumen','Resumen'],['movimientos','Movimientos'],['personas','Personas / cobros'],['historial','Historial']].map(([id,label])=>`<button onclick="setCreditDetailTab('${id}')" class="py-3.5 text-[12px] font-bold ${creditDetailTab===id?'bg-white text-gray-800 shadow-sm':'text-gray-500 hover:bg-white/70'}">${label}</button>`).join('')}</div><div class="p-5">${renderCreditDetailTabContentV167(card,creditDetailTab)}</div></div>`;
+  lucide.createIcons();
+};
+const _openCreditCardDetailV177_forV178=openCreditCardDetail;
+openCreditCardDetail=function(id,tab='resumen'){
+  creditCardHistoryScopeV178='month';
+  _openCreditCardDetailV177_forV178(id,tab);
 };
 
 
