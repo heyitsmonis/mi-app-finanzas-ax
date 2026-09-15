@@ -6831,19 +6831,52 @@ function openAddCreditPersonModal(cardId){
   document.getElementById('modal').classList.remove('hidden');lucide.createIcons();
 }
 function saveCreditPerson(event,cardId){event.preventDefault();const fd=new FormData(event.target),name=String(fd.get('name')||'').trim();if(!name)return;upsertCreditPerson(name,cardId);saveState();closeModal();openCreditMovementModal(cardId,'',name);}
+function decodeCreditPersonArg(person){
+  const raw=String(person||'').trim();
+  if(!raw)return '';
+  try{return decodeURIComponent(raw);}catch(e){return raw;}
+}
 function openRenameCreditPersonModal(person){
-  const clean=String(person||'').trim();if(!clean||clean==='Yo'||clean==='General')return;
-  document.getElementById('modalContent').innerHTML=`<div class="p-5"><div class="flex items-start justify-between gap-3 mb-4"><div><div class="w-10 h-10 rounded-xl bg-lila-50 text-lila-500 flex items-center justify-center mb-3"><i data-lucide="pencil" class="w-5 h-5"></i></div><h3 class="font-bold text-gray-800">Editar persona</h3><p class="text-[11px] text-gray-400 mt-1">El nombre se actualizará en todas sus compras y cobros de todas las tarjetas.</p></div><button onclick="closeModal()" class="text-xl text-gray-400">×</button></div><form onsubmit="saveRenameCreditPerson(event,'${encodeURIComponent(clean)}')" class="space-y-3"><div><label class="block text-xs mb-1 text-gray-500">Nombre</label><input name="name" required value="${escapeHtml(clean)}" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-lila-100"></div><button class="w-full bg-lila-500 hover:bg-lila-400 text-white rounded-xl py-2.5 text-sm font-bold">Guardar cambio</button></form></div>`;
+  const clean=decodeCreditPersonArg(person);if(!clean||clean==='Yo'||clean==='General')return;
+  document.getElementById('modalContent').innerHTML=`<div class="p-5"><div class="flex items-start justify-between gap-3 mb-4"><div><div class="w-10 h-10 rounded-xl bg-lila-50 text-lila-500 flex items-center justify-center mb-3"><i data-lucide="pencil" class="w-5 h-5"></i></div><h3 class="font-bold text-gray-800">Editar persona</h3><p class="text-[11px] text-gray-400 mt-1">El nombre se actualizará en todas sus compras y cobros de todas las tarjetas.</p></div><button type="button" onclick="closeModal()" class="text-xl text-gray-400">×</button></div><form onsubmit="saveRenameCreditPerson(event,'${encodeURIComponent(clean)}')" class="space-y-3"><div><label class="block text-xs mb-1 text-gray-500">Nombre</label><input name="name" required value="${escapeHtml(clean)}" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-lila-100"></div><button class="w-full bg-lila-500 hover:bg-lila-400 text-white rounded-xl py-2.5 text-sm font-bold">Guardar cambio</button></form></div>`;
   document.getElementById('modal').classList.remove('hidden');lucide.createIcons();
 }
 function saveRenameCreditPerson(event,encodedOld){
-  event.preventDefault();const oldName=decodeURIComponent(encodedOld),fd=new FormData(event.target),newName=String(fd.get('name')||'').trim();if(!newName)return;
+  event.preventDefault();const oldName=decodeCreditPersonArg(encodedOld),fd=new FormData(event.target),newName=String(fd.get('name')||'').trim();if(!newName)return;
   const target=getCreditPeopleRecords().find(p=>normalizeCreditText(p.name)===normalizeCreditText(newName)&&normalizeCreditText(p.name)!==normalizeCreditText(oldName));
   let oldRec=getCreditPeopleRecords().find(p=>normalizeCreditText(p.name)===normalizeCreditText(oldName));
   if(target&&oldRec&&target!==oldRec){target.cardIds=[...new Set([...(target.cardIds||[]),...(oldRec.cardIds||[])])];state.creditPeople=state.creditPeople.filter(p=>p!==oldRec);}else if(oldRec){oldRec.name=newName;}else{oldRec=upsertCreditPerson(newName);}
   getCreditMovements().forEach(m=>{if(m.ownerType!=='self'&&normalizeCreditText(m.person)===normalizeCreditText(oldName))m.person=newName;});
   getCreditReceipts().forEach(r=>{if(normalizeCreditText(r.person)===normalizeCreditText(oldName))r.person=newName;});
+  ['fixed','installments','variable'].forEach(col=>(state[col]||[]).forEach(item=>{if(normalizeCreditText(item?.person)===normalizeCreditText(oldName))item.person=newName;}));
   if(creditPersonFilter===oldName)creditPersonFilter=newName;if(creditPeopleFilter===oldName)creditPeopleFilter=newName;
+  if(typeof currentCreditPersonDetailV168!=='undefined'&&currentCreditPersonDetailV168===oldName)currentCreditPersonDetailV168=newName;
+  saveState();closeModal();render();
+}
+function getCreditPersonDeleteInfo(person){
+  const clean=decodeCreditPersonArg(person),key=normalizeCreditText(clean);
+  const movements=getCreditMovements().filter(m=>m.ownerType!=='self'&&normalizeCreditText(m.person)===key);
+  const shared=movements.filter(m=>m.ownerType==='shared');
+  const receipts=getCreditReceipts().filter(r=>normalizeCreditText(r.person)===key);
+  return {clean,key,movements,shared,receipts};
+}
+function openDeleteCreditPersonModal(person){
+  const info=getCreditPersonDeleteInfo(person);if(!info.clean||info.clean==='Yo'||info.clean==='General')return;
+  const block=info.shared.length?`<div class="rounded-xl bg-miel-50 border border-miel-100 p-3 text-[11px] text-gray-600"><b>No se puede eliminar todavía.</b><br>Tiene ${info.shared.length} concepto${info.shared.length===1?'':'s'} compartido${info.shared.length===1?'':'s'}. Primero edítalo o elimínalo para no alterar tu presupuesto.</div>`:`<div class="rounded-xl bg-red-50 border border-red-100 p-3 text-[11px] text-gray-600">Se eliminarán ${info.movements.length} movimiento${info.movements.length===1?'':'s'} y ${info.receipts.length} cobro${info.receipts.length===1?'':'s'} vinculados.</div>`;
+  document.getElementById('modalContent').innerHTML=`<div class="p-5"><div class="flex items-start justify-between gap-3 mb-4"><div><div class="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center mb-3"><i data-lucide="trash-2" class="w-5 h-5"></i></div><h3 class="font-bold text-gray-800">Eliminar persona</h3><p class="text-[11px] text-gray-400 mt-1">${escapeHtml(info.clean)}</p></div><button type="button" onclick="closeModal()" class="text-xl text-gray-400">×</button></div>${block}<div class="flex gap-2 mt-4">${info.shared.length?'':`<button type="button" onclick="deleteCreditPerson('${encodeURIComponent(info.clean)}')" class="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-xl py-2.5 text-sm font-bold">Eliminar persona</button>`}<button type="button" onclick="closeModal()" class="px-4 py-2.5 rounded-xl bg-gray-100 text-sm">Cancelar</button></div></div>`;
+  document.getElementById('modal').classList.remove('hidden');lucide.createIcons();
+}
+function deleteCreditPerson(person){
+  const info=getCreditPersonDeleteInfo(person);if(!info.clean)return;
+  if(info.shared.length){alert('Primero edita o elimina los movimientos compartidos de esta persona.');return;}
+  const ids=new Set(info.movements.map(m=>String(m.id)));
+  info.movements.forEach(m=>{try{if(typeof removeCreditBudgetRecord==='function')removeCreditBudgetRecord(m);}catch(e){}});
+  state.creditMovements=(state.creditMovements||[]).filter(m=>!ids.has(String(m.id)));
+  state.creditReceipts=(state.creditReceipts||[]).filter(r=>!ids.has(String(r.movementId))&&normalizeCreditText(r.person)!==info.key);
+  state.creditPeople=(state.creditPeople||[]).filter(p=>normalizeCreditText(p?.name)!==info.key);
+  if(normalizeCreditText(creditPersonFilter)===info.key)creditPersonFilter='General';
+  if(normalizeCreditText(creditPeopleFilter)===info.key)creditPeopleFilter='General';
+  if(typeof currentCreditPersonDetailV168!=='undefined'&&normalizeCreditText(currentCreditPersonDetailV168)===info.key)currentCreditPersonDetailV168='';
   saveState();closeModal();render();
 }
 function renderCreditMovementControls(mv,card){
@@ -6980,7 +7013,7 @@ function renderCreditPeopleView(){
   const rowsAll=getAllActiveCreditPersonMovements(),known=getSavedCreditPeople(),people=[...new Set([...known,...rowsAll.map(r=>getCreditMovementOwner(r.mv))])].sort((a,b)=>a.localeCompare(b));if(creditPeopleFilter!=='General'&&!people.includes(creditPeopleFilter))creditPeopleFilter='General';const selected=creditPeopleFilter||'General',global=getCreditPeopleMonthlySummary();let rows=rowsAll;if(selected!=='General')rows=rows.filter(r=>getCreditMovementOwner(r.mv)===selected);
   if(creditPeopleStatusFilter!=='all')rows=rows.filter(r=>{const rec=getCreditReceiptAmount(r.mv),due=getCreditMovementMonthlyAmount(r.mv),pending=r.pending;if(creditPeopleStatusFilter==='pending')return pending>0;if(creditPeopleStatusFilter==='partial')return rec>0&&due>0&&rec<due;if(creditPeopleStatusFilter==='received')return due>0&&rec>=due-0.009;return true;});
   const grouped={};people.forEach(p=>{if(selected==='General'||selected===p)grouped[p]=[];});rows.forEach(r=>{const p=getCreditMovementOwner(r.mv);(grouped[p]??=[]).push(r);});
-  const personCards=Object.entries(grouped).map(([person,items])=>{const totalDebt=items.reduce((s,r)=>s+r.remaining,0),month=items.reduce((s,r)=>s+r.due,0),received=items.reduce((s,r)=>s+getCreditReceiptAmount(r.mv),0),pending=items.reduce((s,r)=>s+r.pending,0);const cards=[...new Set(items.map(r=>r.card.name))];return `<div class="bg-white border border-gray-100 rounded-2xl card-shadow p-4"><div class="flex items-start justify-between gap-3"><div class="flex items-center gap-3"><span class="w-10 h-10 rounded-full bg-lila-100 text-lila-600 flex items-center justify-center text-xs font-extrabold">${getCreditPersonInitials(person)}</span><div><div class="flex items-center gap-2"><h3 class="font-extrabold text-gray-800">${escapeHtml(person)}</h3><button onclick="openRenameCreditPersonModal('${encodeURIComponent(person)}')" title="Editar nombre" class="w-7 h-7 rounded-lg hover:bg-lila-50 text-gray-400 hover:text-lila-500 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button></div><p class="text-[10px] text-gray-400 mt-0.5">${items.length?`${items.length} compra${items.length===1?'':'s'} · ${cards.length} tarjeta${cards.length===1?'':'s'}`:'Sin compras activas este mes'}</p></div></div><div class="text-right"><div class="text-[10px] text-gray-400">Debe en total</div><div class="text-base font-extrabold text-gray-800">${fmt(totalDebt)}</div></div></div><div class="grid grid-cols-3 gap-2 mt-3"><div class="rounded-xl bg-lila-50 p-2.5"><div class="text-[10px] text-gray-400">Este mes</div><b class="text-sm text-lila-500">${fmt(month)}</b></div><div class="rounded-xl bg-menta-50 p-2.5"><div class="text-[10px] text-gray-400">Ya pagó</div><b class="text-sm text-menta-500">${fmt(received)}</b></div><div class="rounded-xl bg-durazno-50 p-2.5"><div class="text-[10px] text-gray-400">Falta</div><b class="text-sm text-durazno-500">${fmt(pending)}</b></div></div>${items.length?`<div class="mt-3 space-y-1.5">${items.slice(0,4).map(({card,mv,due,pending:open})=>`<div class="flex items-center justify-between gap-3 py-2 border-t border-gray-50"><div class="flex items-center gap-2 min-w-0">${cardLogoHtml(card,'small')}<div class="min-w-0"><div class="text-[10.5px] font-bold text-gray-700 truncate">${escapeHtml(mv.concept)}</div><div class="text-[10px] text-gray-400">${escapeHtml(card.name)} · este mes ${fmt(due)}</div></div></div><div class="flex items-center gap-2"><b class="text-[10px] ${open>0?'text-durazno-500':'text-menta-500'}">${fmt(open)}</b><button onclick="openCreditReceiptModal('${mv.id}')" class="px-2 py-1 rounded-lg bg-azul-50 text-azul-500 text-[9.5px] font-bold">Cobrar</button></div></div>`).join('')}</div>`:''}</div>`;}).join('');
+  const personCards=Object.entries(grouped).map(([person,items])=>{const totalDebt=items.reduce((s,r)=>s+r.remaining,0),month=items.reduce((s,r)=>s+r.due,0),received=items.reduce((s,r)=>s+getCreditReceiptAmount(r.mv),0),pending=items.reduce((s,r)=>s+r.pending,0);const cards=[...new Set(items.map(r=>r.card.name))];return `<div class="bg-white border border-gray-100 rounded-2xl card-shadow p-4"><div class="flex items-start justify-between gap-3"><div class="flex items-center gap-3"><span class="w-10 h-10 rounded-full bg-lila-100 text-lila-600 flex items-center justify-center text-xs font-extrabold">${getCreditPersonInitials(person)}</span><div><div class="flex items-center gap-2"><h3 class="font-extrabold text-gray-800">${escapeHtml(person)}</h3><button type="button" onclick="openRenameCreditPersonModal('${encodeURIComponent(person)}')" title="Editar persona" class="w-7 h-7 rounded-lg hover:bg-lila-50 text-gray-400 hover:text-lila-500 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button><button type="button" onclick="openDeleteCreditPersonModal('${encodeURIComponent(person)}')" title="Eliminar persona" class="w-7 h-7 rounded-lg bg-red-50 text-red-400 hover:text-red-600 hover:bg-red-100 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></div><p class="text-[10px] text-gray-400 mt-0.5">${items.length?`${items.length} compra${items.length===1?'':'s'} · ${cards.length} tarjeta${cards.length===1?'':'s'}`:'Sin compras activas este mes'}</p></div></div><div class="text-right"><div class="text-[10px] text-gray-400">Debe en total</div><div class="text-base font-extrabold text-gray-800">${fmt(totalDebt)}</div></div></div><div class="grid grid-cols-3 gap-2 mt-3"><div class="rounded-xl bg-lila-50 p-2.5"><div class="text-[10px] text-gray-400">Este mes</div><b class="text-sm text-lila-500">${fmt(month)}</b></div><div class="rounded-xl bg-menta-50 p-2.5"><div class="text-[10px] text-gray-400">Ya pagó</div><b class="text-sm text-menta-500">${fmt(received)}</b></div><div class="rounded-xl bg-durazno-50 p-2.5"><div class="text-[10px] text-gray-400">Falta</div><b class="text-sm text-durazno-500">${fmt(pending)}</b></div></div>${items.length?`<div class="mt-3 space-y-1.5">${items.slice(0,4).map(({card,mv,due,pending:open})=>`<div class="flex items-center justify-between gap-3 py-2 border-t border-gray-50"><div class="flex items-center gap-2 min-w-0">${cardLogoHtml(card,'small')}<div class="min-w-0"><div class="text-[10.5px] font-bold text-gray-700 truncate">${escapeHtml(mv.concept)}</div><div class="text-[10px] text-gray-400">${escapeHtml(card.name)} · este mes ${fmt(due)}</div></div></div><div class="flex items-center gap-2"><b class="text-[10px] ${open>0?'text-durazno-500':'text-menta-500'}">${fmt(open)}</b><button onclick="openCreditReceiptModal('${mv.id}')" class="px-2 py-1 rounded-lg bg-azul-50 text-azul-500 text-[9.5px] font-bold">Cobrar</button></div></div>`).join('')}</div>`:''}</div>`;}).join('');
   const stat=(label,value,icon,color,bg,border)=>`<div class="${bg} ${border} border rounded-2xl p-3.5 card-shadow"><div class="flex items-center gap-2"><span class="w-8 h-8 rounded-xl bg-white/80 ${color} flex items-center justify-center"><i data-lucide="${icon}" class="w-4 h-4"></i></span><div><div class="text-[10px] text-gray-500 font-bold">${label}</div><div class="text-lg font-extrabold ${color}">${fmt(value)}</div></div></div></div>`;
   document.getElementById('mainContent').innerHTML=`<div class="flex items-center justify-between mb-4"><div><h2 class="text-2xl font-bold flex items-center gap-2"><i data-lucide="users" class="w-6 h-6 text-lila-500"></i>Tarjetas · Por persona</h2><p class="text-sm text-gray-400 mt-1">Aquí ves a cada persona sin importar qué tarjeta usó. Puedes corregir nombres y registrar cobros.</p></div><div class="bg-white border border-gray-100 rounded-xl p-1 flex gap-1 card-shadow"><button onclick="currentView='creditcards';render()" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500">Por tarjeta</button><button class="px-3 py-1.5 rounded-lg text-xs font-bold bg-menta-500 text-white">Por persona</button></div></div><div class="grid grid-cols-4 gap-3 mb-4">${stat('Deuda total de terceros',global.totalDebt,'wallet','text-gray-800','bg-gray-50','border-gray-100')}${stat('Corresponde este mes',global.totalMonth,'calendar-check','text-lila-500','bg-lila-50','border-lila-100')}${stat('Recibido este mes',global.received,'circle-check','text-menta-500','bg-menta-50','border-menta-100')}${stat('Pendiente por cobrar',global.missing,'receipt','text-durazno-500','bg-durazno-50','border-durazno-100')}</div><div class="bg-white border border-gray-100 rounded-2xl p-3 mb-4 flex items-end gap-3"><div class="flex-1"><label class="text-[10px] text-gray-500 font-bold">Persona</label><select onchange="creditPeopleFilter=this.value;render()" class="w-full border border-gray-100 rounded-xl px-3 py-2 text-xs mt-1"><option>General</option>${people.map(p=>`<option value="${escapeHtml(p)}" ${p===selected?'selected':''}>${escapeHtml(p)}</option>`).join('')}</select></div><div class="flex-1"><label class="text-[10px] text-gray-500 font-bold">Estado</label><select onchange="creditPeopleStatusFilter=this.value;render()" class="w-full border border-gray-100 rounded-xl px-3 py-2 text-xs mt-1"><option value="all">Todos</option><option value="pending" ${creditPeopleStatusFilter==='pending'?'selected':''}>Pendiente</option><option value="partial" ${creditPeopleStatusFilter==='partial'?'selected':''}>Con abono</option><option value="received" ${creditPeopleStatusFilter==='received'?'selected':''}>Cobrado este mes</option></select></div><div class="rounded-xl bg-menta-50 border border-menta-100 px-3 py-2.5 text-[10px] text-gray-500 max-w-[340px]"><b class="text-menta-600">Tip:</b> el lápiz cambia el nombre en todas las tarjetas y cobros asociados.</div></div><div class="grid grid-cols-2 gap-4">${personCards||'<div class="col-span-2 bg-white border border-gray-100 rounded-2xl p-8 text-center text-gray-400">No hay personas para este filtro.</div>'}</div>`;
 }
@@ -7920,7 +7953,7 @@ renderCreditPeopleView = function(){
   const cardsHtml=filtered.map(x=>{
     const cardGroups={};x.movs.forEach(mv=>{const c=getCreditCardForMovementV167(mv);if(!c)return;(cardGroups[c.id]??={card:c,remaining:0,month:0,pending:0,count:0});cardGroups[c.id].remaining+=getCreditMovementPersonRemaining(mv);cardGroups[c.id].month+=getCreditMovementThirdPartyMonthlyAmount(mv);cardGroups[c.id].pending+=getCreditMovementOutstandingThrough(mv);cardGroups[c.id].count++;});
     const groups=Object.values(cardGroups);
-    return `<div class="bg-white border border-gray-100 rounded-2xl card-shadow p-4"><div class="flex items-start justify-between gap-3"><div class="flex items-center gap-3"><span class="w-10 h-10 rounded-full bg-lila-50 text-lila-600 flex items-center justify-center text-xs font-extrabold">${getCreditPersonInitials(x.person)}</span><div><div class="flex items-center gap-2"><h3 class="font-extrabold text-gray-800">${escapeHtml(x.person)}</h3><button onclick="openRenameCreditPersonModal('${encodeURIComponent(x.person)}')" class="w-7 h-7 rounded-lg hover:bg-lila-50 text-gray-400 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button></div><p class="text-[10px] text-gray-400">${x.movs.length} movimiento${x.movs.length===1?'':'s'} · ${groups.length} tarjeta${groups.length===1?'':'s'}</p></div></div><div class="text-right"><div class="text-[10px] text-gray-400">Todavía te debe</div><div class="text-lg font-extrabold ${x.remaining>0?'text-durazno-600':'text-menta-500'}">${fmt(x.remaining)}</div></div></div><div class="grid grid-cols-3 gap-2 mt-3"><div class="rounded-xl bg-lila-50 p-2.5"><div class="text-[10px] text-gray-400">Este mes</div><b class="text-sm text-lila-500">${fmt(x.monthDue)}</b></div><div class="rounded-xl bg-menta-50 p-2.5"><div class="text-[10px] text-gray-400">Recibido</div><b class="text-sm text-menta-500">${fmt(x.receivedMonth)}</b></div><div class="rounded-xl bg-durazno-50 p-2.5"><div class="text-[10px] text-gray-400">Falta ahora</div><b class="text-sm text-durazno-600">${fmt(x.pendingNow)}</b></div></div>${(x.advanced+x.refinanced)>0?`<div class="mt-2 rounded-xl bg-miel-50 border border-miel-100 px-3 py-2 text-[10px] text-gray-500"><b class="text-miel-600">Ya cubriste por esta persona:</b> ${fmt(x.advanced)} con tu dinero · ${fmt(x.refinanced)} refinanciado</div>`:''}<div class="mt-3 space-y-1.5">${groups.map(g=>`<div class="flex items-center justify-between gap-3 py-2 border-t border-gray-50"><div class="flex items-center gap-2 min-w-0">${cardLogoHtml(g.card,'small')}<div><div class="text-[10px] font-bold text-gray-700">${escapeHtml(g.card.name)}</div><div class="text-[10px] text-gray-400">${g.count} concepto${g.count===1?'':'s'} · falta ${fmt(g.pending)}</div></div></div><button onclick="openCreditCardDetail('${g.card.id}','personas')" class="text-[9px] text-lila-500 font-bold">Ver</button></div>`).join('')}</div><div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-2"><button onclick="openCreditPersonPaymentModalV167('${encodeURIComponent(x.person)}','')" class="px-3 py-1.5 rounded-lg bg-menta-50 text-menta-600 border border-menta-100 text-[9.5px] font-bold">Registrar cobro</button>${x.unfunded>0.009?`<button onclick="openCreditShortfallModalV167('${encodeURIComponent(x.person)}','')" class="px-3 py-1.5 rounded-lg bg-miel-50 text-miel-600 border border-miel-100 text-[9.5px] font-bold">Resolver faltante</button>`:''}${x.pendingNow<=0.009&&x.remaining<=0.009?`<span class="px-3 py-1.5 rounded-lg bg-menta-50 text-menta-600 text-[9.5px] font-bold">✓ Liquidado</span>`:''}</div></div>`;
+    return `<div class="bg-white border border-gray-100 rounded-2xl card-shadow p-4"><div class="flex items-start justify-between gap-3"><div class="flex items-center gap-3"><span class="w-10 h-10 rounded-full bg-lila-50 text-lila-600 flex items-center justify-center text-xs font-extrabold">${getCreditPersonInitials(x.person)}</span><div><div class="flex items-center gap-2"><h3 class="font-extrabold text-gray-800">${escapeHtml(x.person)}</h3><button type="button" onclick="openRenameCreditPersonModal('${encodeURIComponent(x.person)}')" title="Editar persona" class="w-7 h-7 rounded-lg hover:bg-lila-50 text-gray-400 hover:text-lila-500 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button><button type="button" onclick="openDeleteCreditPersonModal('${encodeURIComponent(x.person)}')" title="Eliminar persona" class="w-7 h-7 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></div><p class="text-[10px] text-gray-400">${x.movs.length} movimiento${x.movs.length===1?'':'s'} · ${groups.length} tarjeta${groups.length===1?'':'s'}</p></div></div><div class="text-right"><div class="text-[10px] text-gray-400">Todavía te debe</div><div class="text-lg font-extrabold ${x.remaining>0?'text-durazno-600':'text-menta-500'}">${fmt(x.remaining)}</div></div></div><div class="grid grid-cols-3 gap-2 mt-3"><div class="rounded-xl bg-lila-50 p-2.5"><div class="text-[10px] text-gray-400">Este mes</div><b class="text-sm text-lila-500">${fmt(x.monthDue)}</b></div><div class="rounded-xl bg-menta-50 p-2.5"><div class="text-[10px] text-gray-400">Recibido</div><b class="text-sm text-menta-500">${fmt(x.receivedMonth)}</b></div><div class="rounded-xl bg-durazno-50 p-2.5"><div class="text-[10px] text-gray-400">Falta ahora</div><b class="text-sm text-durazno-600">${fmt(x.pendingNow)}</b></div></div>${(x.advanced+x.refinanced)>0?`<div class="mt-2 rounded-xl bg-miel-50 border border-miel-100 px-3 py-2 text-[10px] text-gray-500"><b class="text-miel-600">Ya cubriste por esta persona:</b> ${fmt(x.advanced)} con tu dinero · ${fmt(x.refinanced)} refinanciado</div>`:''}<div class="mt-3 space-y-1.5">${groups.map(g=>`<div class="flex items-center justify-between gap-3 py-2 border-t border-gray-50"><div class="flex items-center gap-2 min-w-0">${cardLogoHtml(g.card,'small')}<div><div class="text-[10px] font-bold text-gray-700">${escapeHtml(g.card.name)}</div><div class="text-[10px] text-gray-400">${g.count} concepto${g.count===1?'':'s'} · falta ${fmt(g.pending)}</div></div></div><button onclick="openCreditCardDetail('${g.card.id}','personas')" class="text-[9px] text-lila-500 font-bold">Ver</button></div>`).join('')}</div><div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-2"><button onclick="openCreditPersonPaymentModalV167('${encodeURIComponent(x.person)}','')" class="px-3 py-1.5 rounded-lg bg-menta-50 text-menta-600 border border-menta-100 text-[9.5px] font-bold">Registrar cobro</button>${x.unfunded>0.009?`<button onclick="openCreditShortfallModalV167('${encodeURIComponent(x.person)}','')" class="px-3 py-1.5 rounded-lg bg-miel-50 text-miel-600 border border-miel-100 text-[9.5px] font-bold">Resolver faltante</button>`:''}${x.pendingNow<=0.009&&x.remaining<=0.009?`<span class="px-3 py-1.5 rounded-lg bg-menta-50 text-menta-600 text-[9.5px] font-bold">✓ Liquidado</span>`:''}</div></div>`;
   }).join('');
   document.getElementById('mainContent').innerHTML=`<div class="flex items-center justify-between mb-4"><div><h2 class="text-2xl font-bold flex items-center gap-2"><i data-lucide="users" class="w-6 h-6 text-lila-500"></i>Deuda por persona</h2><p class="text-sm text-gray-400 mt-1">Ve cuánto te deben aunque esté repartido entre varias tarjetas. Los abonos parciales no se pierden.</p></div><div class="bg-white border border-gray-100 rounded-xl p-1 flex gap-1 card-shadow"><button onclick="currentView='creditcards';render()" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500">Por tarjeta</button><button class="px-3 py-1.5 rounded-lg text-xs font-bold bg-lila-500 text-white">Por persona</button></div></div><div class="grid grid-cols-6 gap-3 mb-4">${creditMetricV167('wallet','Te deben en total',fmt(totalRemaining),'text-gray-800')}${creditMetricV167('calendar-check','Este mes',fmt(totalMonth),'text-lila-500','bg-lila-50','border-lila-100')}${creditMetricV167('circle-check','Recibido este mes',fmt(totalReceived),'text-menta-500','bg-menta-50','border-menta-100')}${creditMetricV167('receipt','Pendiente ahora',fmt(totalPending),'text-durazno-600','bg-durazno-50','border-durazno-100')}${creditMetricV167('hand-coins','Pusiste tú',fmt(advanced),'text-miel-600','bg-miel-50','border-miel-100')}${creditMetricV167('arrow-right-left','Refinanciado',fmt(refinanced),'text-pizarra-600','bg-pizarra-50','border-pizarra-100')}</div><div class="bg-white border border-gray-100 rounded-2xl p-3 mb-4 flex items-end gap-3"><div class="flex-1"><label class="text-[10px] text-gray-500 font-bold">Persona</label><select onchange="creditPeopleFilter=this.value;render()" class="w-full border border-gray-100 rounded-xl px-3 py-2 text-xs mt-1"><option>General</option>${people.map(p=>`<option value="${escapeHtml(p)}" ${p===selected?'selected':''}>${escapeHtml(p)}</option>`).join('')}</select></div><div class="flex-1"><label class="text-[10px] text-gray-500 font-bold">Estado</label><select onchange="creditPeopleStatusFilter=this.value;render()" class="w-full border border-gray-100 rounded-xl px-3 py-2 text-xs mt-1"><option value="all">Todos</option><option value="pending" ${creditPeopleStatusFilter==='pending'?'selected':''}>Con pendiente</option><option value="partial" ${creditPeopleStatusFilter==='partial'?'selected':''}>Con abono parcial</option><option value="received" ${creditPeopleStatusFilter==='received'?'selected':''}>Cobrado este mes</option></select></div><div class="max-w-[390px] rounded-xl bg-azul-50 border border-azul-100 px-3 py-2.5 text-[10px] text-gray-500"><b class="text-azul-600">Importante:</b> si tú cubres un faltante, la deuda de la persona no desaparece. Solo cambia de dónde salió el dinero.</div></div><div class="grid grid-cols-2 gap-4">${cardsHtml||'<div class="col-span-2 bg-white border border-gray-100 rounded-2xl p-8 text-center text-gray-400">No hay personas para este filtro.</div>'}</div>`;lucide.createIcons();
 };
@@ -8190,7 +8223,7 @@ renderCreditPeopleView = function(){
   const filtered=monthRelevant.filter(x=>selected==='General'||x.person===selected).filter(x=>creditPeopleStatusFilter==='all'||(creditPeopleStatusFilter==='pending'?x.monthOpen>0.009:creditPeopleStatusFilter==='partial'?x.receivedMonth>0.009&&x.monthOpen>0.009:creditPeopleStatusFilter==='received'?x.monthDue>0.009&&x.monthOpen<=0.009:true));
   const cardsHtml=filtered.map(x=>{
     const monthMovs=x.movs.filter(mv=>getCreditMovementThirdPartyMonthlyAmount(mv)>0.009||getCreditReceiptAmount(mv)>0.009),cards=[...new Set(monthMovs.map(mv=>getCreditCardForMovementV167(mv)?.id).filter(Boolean))];
-    return `<div class="bg-white border border-gray-100 rounded-2xl card-shadow p-4"><div class="flex items-start justify-between gap-3"><div class="flex items-center gap-3"><span class="w-10 h-10 rounded-full bg-lila-50 text-lila-600 flex items-center justify-center text-xs font-extrabold">${getCreditPersonInitials(x.person)}</span><div><div class="flex items-center gap-2"><h3 class="font-extrabold text-gray-800">${escapeHtml(x.person)}</h3><button onclick="openRenameCreditPersonModal('${encodeURIComponent(x.person)}')" class="w-7 h-7 rounded-lg hover:bg-lila-50 text-gray-400 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button></div><p class="text-[10px] text-gray-400">${monthMovs.length} concepto${monthMovs.length===1?'':'s'} · ${cards.length} tarjeta${cards.length===1?'':'s'} este mes</p></div></div><div class="text-right"><div class="text-[10px] text-gray-400">En ${MONTHS[state.currentMonth]} debe</div><div class="text-lg font-extrabold ${x.monthDue>0?'text-lila-500':'text-menta-500'}">${fmt(x.monthDue)}</div><div class="text-[10px] text-gray-400">de todas sus tarjetas</div></div></div><div class="grid grid-cols-2 gap-2 mt-3"><div class="rounded-xl bg-menta-50 p-2.5"><div class="text-[10px] text-gray-400">Cobrado en ${MONTHS[state.currentMonth]}</div><b class="text-[12px] text-menta-500">${fmt(x.receivedMonth)}</b></div><div class="rounded-xl bg-durazno-50 p-2.5"><div class="text-[10px] text-gray-400">Falta de ${MONTHS[state.currentMonth]}</div><b class="text-[12px] text-durazno-600">${fmt(x.monthOpen)}</b></div></div><div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-2"><button onclick="openCreditPersonDetailV168('${encodeURIComponent(x.person)}')" class="px-3 py-1.5 rounded-lg bg-lila-500 text-white text-[9.5px] font-bold">Ver desglose</button><button onclick="openCreditPersonPaymentModalV168('${encodeURIComponent(x.person)}','')" class="px-3 py-1.5 rounded-lg bg-menta-50 text-menta-600 border border-menta-100 text-[9.5px] font-bold">Registrar cobro</button>${x.unfunded>0.009?`<button onclick="openCreditShortfallModalV167('${encodeURIComponent(x.person)}','')" class="px-3 py-1.5 rounded-lg bg-miel-50 text-miel-600 border border-miel-100 text-[9.5px] font-bold">Resolver faltante</button>`:''}${x.monthDue>0.009&&x.monthOpen<=0.009?`<span class="px-3 py-1.5 rounded-lg bg-menta-50 text-menta-600 text-[9.5px] font-bold">✓ ${MONTHS[state.currentMonth]} cobrado</span>`:''}</div></div>`;
+    return `<div class="bg-white border border-gray-100 rounded-2xl card-shadow p-4"><div class="flex items-start justify-between gap-3"><div class="flex items-center gap-3"><span class="w-10 h-10 rounded-full bg-lila-50 text-lila-600 flex items-center justify-center text-xs font-extrabold">${getCreditPersonInitials(x.person)}</span><div><div class="flex items-center gap-2"><h3 class="font-extrabold text-gray-800">${escapeHtml(x.person)}</h3><button type="button" onclick="openRenameCreditPersonModal('${encodeURIComponent(x.person)}')" title="Editar persona" class="w-7 h-7 rounded-lg hover:bg-lila-50 text-gray-400 hover:text-lila-500 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button><button type="button" onclick="openDeleteCreditPersonModal('${encodeURIComponent(x.person)}')" title="Eliminar persona" class="w-7 h-7 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></div><p class="text-[10px] text-gray-400">${monthMovs.length} concepto${monthMovs.length===1?'':'s'} · ${cards.length} tarjeta${cards.length===1?'':'s'} este mes</p></div></div><div class="text-right"><div class="text-[10px] text-gray-400">En ${MONTHS[state.currentMonth]} debe</div><div class="text-lg font-extrabold ${x.monthDue>0?'text-lila-500':'text-menta-500'}">${fmt(x.monthDue)}</div><div class="text-[10px] text-gray-400">de todas sus tarjetas</div></div></div><div class="grid grid-cols-2 gap-2 mt-3"><div class="rounded-xl bg-menta-50 p-2.5"><div class="text-[10px] text-gray-400">Cobrado en ${MONTHS[state.currentMonth]}</div><b class="text-[12px] text-menta-500">${fmt(x.receivedMonth)}</b></div><div class="rounded-xl bg-durazno-50 p-2.5"><div class="text-[10px] text-gray-400">Falta de ${MONTHS[state.currentMonth]}</div><b class="text-[12px] text-durazno-600">${fmt(x.monthOpen)}</b></div></div><div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-2"><button onclick="openCreditPersonDetailV168('${encodeURIComponent(x.person)}')" class="px-3 py-1.5 rounded-lg bg-lila-500 text-white text-[9.5px] font-bold">Ver desglose</button><button onclick="openCreditPersonPaymentModalV168('${encodeURIComponent(x.person)}','')" class="px-3 py-1.5 rounded-lg bg-menta-50 text-menta-600 border border-menta-100 text-[9.5px] font-bold">Registrar cobro</button>${x.unfunded>0.009?`<button onclick="openCreditShortfallModalV167('${encodeURIComponent(x.person)}','')" class="px-3 py-1.5 rounded-lg bg-miel-50 text-miel-600 border border-miel-100 text-[9.5px] font-bold">Resolver faltante</button>`:''}${x.monthDue>0.009&&x.monthOpen<=0.009?`<span class="px-3 py-1.5 rounded-lg bg-menta-50 text-menta-600 text-[9.5px] font-bold">✓ ${MONTHS[state.currentMonth]} cobrado</span>`:''}</div></div>`;
   }).join('');
   const monthlyPeopleCount=monthRelevant.filter(x=>x.monthDue>0.009).length;
   document.getElementById('mainContent').innerHTML=`<div class="flex items-center justify-between mb-4"><div><h2 class="text-2xl font-bold flex items-center gap-2"><i data-lucide="users" class="w-6 h-6 text-lila-500"></i>Cobros por persona · ${MONTHS[state.currentMonth]} ${state.currentYear}</h2><p class="text-sm text-gray-400 mt-1">Esta vista es mensual: afuera solo ves lo que cada persona debe pagar en el mes seleccionado. Su deuda completa está dentro de “Ver desglose”.</p></div><div class="bg-white border border-gray-100 rounded-xl p-1 flex gap-1 card-shadow"><button onclick="currentView='creditcards';render()" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500">Por tarjeta</button><button class="px-3 py-1.5 rounded-lg text-xs font-bold bg-lila-500 text-white">Por persona</button></div></div><div class="grid grid-cols-4 gap-3 mb-4">${creditMetricV167('calendar-check',`A cobrar en ${MONTHS[state.currentMonth]}`,fmt(totalMonth),'text-lila-500','bg-lila-50','border-lila-100')}${creditMetricV167('circle-check',`Cobrado en ${MONTHS[state.currentMonth]}`,fmt(totalReceived),'text-menta-500','bg-menta-50','border-menta-100')}${creditMetricV167('receipt',`Falta cobrar ${MONTHS[state.currentMonth]}`,fmt(totalOpen),'text-durazno-600','bg-durazno-50','border-durazno-100')}${creditMetricV167('users','Personas con cobro',String(monthlyPeopleCount),'text-gray-800','bg-gray-50','border-gray-100')}</div><div class="bg-white border border-gray-100 rounded-2xl p-3 mb-4 flex items-end gap-3"><div class="flex-1"><label class="text-[10px] text-gray-500 font-bold">Persona</label><select onchange="creditPeopleFilter=this.value;render()" class="w-full border border-gray-100 rounded-xl px-3 py-2 text-xs mt-1"><option>General</option>${people.map(p=>`<option value="${escapeHtml(p)}" ${p===selected?'selected':''}>${escapeHtml(p)}</option>`).join('')}</select></div><div class="flex-1"><label class="text-[10px] text-gray-500 font-bold">Estado de ${MONTHS[state.currentMonth]}</label><select onchange="creditPeopleStatusFilter=this.value;render()" class="w-full border border-gray-100 rounded-xl px-3 py-2 text-xs mt-1"><option value="all">Todos</option><option value="pending" ${creditPeopleStatusFilter==='pending'?'selected':''}>Con pendiente</option><option value="partial" ${creditPeopleStatusFilter==='partial'?'selected':''}>Con abono parcial</option><option value="received" ${creditPeopleStatusFilter==='received'?'selected':''}>Cobrado este mes</option></select></div><div class="max-w-[420px] rounded-xl bg-azul-50 border border-azul-100 px-3 py-2.5 text-[10px] text-gray-500"><b class="text-azul-600">Sin confundir total con mensualidad:</b> entra a “Ver desglose” para revisar deuda total, tarjetas, MSI, vencidos e historial.</div></div><div class="grid grid-cols-2 gap-4">${cardsHtml||`<div class="col-span-2 bg-white border border-gray-100 rounded-2xl p-8 text-center text-gray-400">No hay cobros de terceros en ${MONTHS[state.currentMonth]} con este filtro.</div>`}</div>`;lucide.createIcons();
@@ -13333,6 +13366,396 @@ function runExactSalaryQA_V244(){
 setTimeout(()=>{try{runExactSalaryQA_V244();}catch(e){console.warn('QA v244 omitido',e);}},0);
 </script>
 
+
+
+
+<script>
+/* ============================================================
+   v246 · ESTABILIDAD GLOBAL DE INTERACCIÓN
+   - Los buscadores ya NO reconstruyen la pantalla en cada tecla.
+   - Conserva scroll de <main>, ventana, foco y cursor.
+   - Bloquea el scroll-to-top durante renders de búsqueda.
+   - Refresco automático de iconos tras cambios dinámicos del DOM.
+   - QA estático/runtime ligero de handlers e iconos.
+============================================================ */
+(function(){
+  const V246_DELAY=140;
+  const timers={};
+  let preserveScrollDepth=0;
+  let iconRefreshQueued=false;
+
+  function getScrollSnapshot(){
+    const main=document.querySelector('main');
+    return {
+      wx:window.scrollX||0,
+      wy:window.scrollY||document.documentElement.scrollTop||0,
+      mx:main?main.scrollLeft:0,
+      my:main?main.scrollTop:0
+    };
+  }
+  function restoreScrollSnapshot(snap){
+    if(!snap)return;
+    const main=document.querySelector('main');
+    if(main){main.scrollTop=snap.my||0;main.scrollLeft=snap.mx||0;}
+    try{window.scrollTo(snap.wx||0,snap.wy||0);}catch(e){}
+  }
+  function restoreSearchInput(key,value,start,end,snap){
+    const run=()=>{
+      restoreScrollSnapshot(snap);
+      const el=document.querySelector(`[data-v237-search="${key}"]`);
+      if(el){
+        try{
+          if(el.value!==value)el.value=value;
+          el.focus({preventScroll:true});
+          if(typeof el.setSelectionRange==='function')el.setSelectionRange(start??value.length,end??value.length);
+        }catch(e){}
+      }
+      restoreScrollSnapshot(snap);
+    };
+    run();
+    requestAnimationFrame(()=>{run();requestAnimationFrame(run);});
+  }
+
+  // render() históricamente manda la vista arriba al detectar navegación.
+  // Durante una búsqueda el usuario NO está navegando, así que se anula ese salto.
+  const baseScrollTop=window.scrollMainViewTopV196;
+  if(typeof baseScrollTop==='function'){
+    window.scrollMainViewTopV196=function(){
+      if(preserveScrollDepth>0)return;
+      return baseScrollTop.apply(this,arguments);
+    };
+  }
+
+  function renderPreservingSearch(key,value,input,renderer){
+    const snap=getScrollSnapshot();
+    const start=input&&Number.isInteger(input.selectionStart)?input.selectionStart:String(value||'').length;
+    const end=input&&Number.isInteger(input.selectionEnd)?input.selectionEnd:start;
+    preserveScrollDepth++;
+    try{renderer();}
+    finally{preserveScrollDepth=Math.max(0,preserveScrollDepth-1);}
+    scheduleIconRefresh();
+    restoreSearchInput(key,String(value??''),start,end,snap);
+  }
+
+  function debounceSearch(key,value,input,renderer){
+    clearTimeout(timers[key]);
+    const start=input&&Number.isInteger(input.selectionStart)?input.selectionStart:String(value||'').length;
+    const end=input&&Number.isInteger(input.selectionEnd)?input.selectionEnd:start;
+    // Mientras escribe no tocamos el DOM: así jamás pierde foco ni brinca la pantalla.
+    timers[key]=setTimeout(()=>{
+      const live=document.querySelector(`[data-v237-search="${key}"]`)||input;
+      if(live && typeof live.setSelectionRange==='function'){
+        try{live.setSelectionRange(start,end);}catch(e){}
+      }
+      renderPreservingSearch(key,value,live,renderer);
+    },V246_DELAY);
+  }
+
+  window.v237SearchInput=function(input,kind){
+    const raw=String(input?.value??'');
+    if(kind==='fixed'){
+      fixedViewSearch=raw;
+      debounceSearch('fixed',raw,input,()=>renderFixedView());
+    }else if(kind==='installments'){
+      installmentViewSearch=raw.toLowerCase().trim();
+      debounceSearch('installments',raw,input,()=>renderInstallmentsView());
+    }else if(kind==='variable'){
+      variableViewSearch=raw;
+      debounceSearch('variable',raw,input,()=>renderVariableView());
+    }
+  };
+
+  window.setMonthlyBoardSearch=function(value){
+    const input=document.querySelector('[data-v237-search="monthlyBoard"]');
+    monthlyBoardSearch=String(value??''); monthlyBoardPage=1;
+    debounceSearch('monthlyBoard',monthlyBoardSearch,input,()=>render());
+  };
+  window.setCreditCardsSearch=function(value){
+    const input=document.querySelector('[data-v237-search="creditCards"]');
+    creditCardsSearch=String(value??'');
+    debounceSearch('creditCards',creditCardsSearch,input,()=>renderCreditCardsView());
+  };
+  if(typeof window.setCreditCardsSearchV167==='function'){
+    window.setCreditCardsSearchV167=function(value){
+      const input=document.querySelector('[data-v237-search="creditCards"]');
+      creditCardsSearch=String(value??'');
+      debounceSearch('creditCards',creditCardsSearch,input,()=>renderCreditCardsView());
+    };
+  }
+  window.setCreditDetailMovementSearch=function(value){
+    const input=document.querySelector('[data-v237-search="creditMovement"]');
+    creditDetailMovementSearch=String(value??''); creditDetailMovementPage=1;
+    debounceSearch('creditMovement',creditDetailMovementSearch,input,()=>renderCreditCardDetailView());
+  };
+  if(typeof window.setCreditPersonDetailSearchV168==='function'){
+    window.setCreditPersonDetailSearchV168=function(value){
+      const input=document.querySelector('[data-v237-search="creditPerson"]');
+      creditPersonDetailSearchV168=String(value??'');
+      debounceSearch('creditPerson',creditPersonDetailSearchV168,input,()=>renderCreditPersonDetailViewV168());
+    };
+  }
+
+  function scheduleIconRefresh(){
+    if(iconRefreshQueued)return;
+    iconRefreshQueued=true;
+    requestAnimationFrame(()=>{
+      iconRefreshQueued=false;
+      try{
+        if(window.lucide&&typeof lucide.createIcons==='function')lucide.createIcons();
+      }catch(e){console.warn('v246 Lucide:',e);}
+      // Si queda algún <i data-lucide>, normalmente es un nombre inválido.
+      const unresolved=[...document.querySelectorAll('i[data-lucide]')];
+      if(unresolved.length){
+        unresolved.forEach(el=>{
+          el.dataset.lucide='circle';
+          if(!el.getAttribute('aria-label'))el.setAttribute('aria-label','Icono');
+        });
+        try{if(window.lucide&&typeof lucide.createIcons==='function')lucide.createIcons();}catch(e){}
+      }
+    });
+  }
+  window.refreshIconsV246=scheduleIconRefresh;
+
+  // Cualquier bloque dinámico que se vuelva a pintar recibe iconos sin necesitar
+  // recordar createIcons() en cada botón/ruta.
+  const mainContent=document.getElementById('mainContent');
+  if(mainContent && typeof MutationObserver!=='undefined'){
+    const observer=new MutationObserver(muts=>{
+      if(muts.some(m=>m.addedNodes&&m.addedNodes.length))scheduleIconRefresh();
+    });
+    observer.observe(mainContent,{childList:true,subtree:true});
+  }
+
+  // Evita que focus() normal del navegador desplace la página en nuestros buscadores.
+  document.addEventListener('focusin',ev=>{
+    const el=ev.target;
+    if(!el?.matches?.('input[data-v237-search]'))return;
+    const snap=getScrollSnapshot();
+    requestAnimationFrame(()=>restoreScrollSnapshot(snap));
+  },true);
+
+  function runQA_V246(){
+    const issues=[];
+    const required=[
+      'render','renderDashboardView','renderMonthlyView','renderFixedView','renderInstallmentsView',
+      'renderVariableView','renderSavingsView','renderCreditCardsView','renderStrategyViewV202',
+      'renderAnnualView','renderConfigView','v237SearchInput','setMonthlyBoardSearch',
+      'setCreditCardsSearch','setCreditDetailMovementSearch'
+    ];
+    required.forEach(n=>{if(typeof window[n]!=='function')issues.push(`Falta función: ${n}`);});
+    const badSearch=[...document.querySelectorAll('input[data-v237-search]')].filter(i=>!i.getAttribute('oninput'));
+    if(badSearch.length)issues.push(`${badSearch.length} buscador(es) sin oninput`);
+    const duplicateIds=[...document.querySelectorAll('[id]')].map(n=>n.id).filter((id,i,a)=>a.indexOf(id)!==i);
+    if(duplicateIds.length)console.info('v246 IDs repetidos presentes en plantillas/vistas:',[...new Set(duplicateIds)].slice(0,10));
+    if(issues.length)console.warn('QA v246:',issues); else console.info('QA v246: navegación base, búsquedas estables e iconos dinámicos disponibles.');
+    return issues;
+  }
+
+  setTimeout(()=>{scheduleIconRefresh();try{runQA_V246();}catch(e){console.warn('QA v246 no pudo ejecutarse',e);}},80);
+})();
+</script>
+
+
+
+
+<script>
+/* ============================================================
+   V249 · BUSCADORES ESTABLES + INTERACCIONES SIN SALTOS
+   - Intercepta TODOS los buscadores data-v237-search antes de
+     que los handlers antiguos reconstruyan la vista por tecla.
+   - Permite escribir palabras completas sin perder foco/cursor.
+   - Renderiza tras una pausa y conserva exactamente el scroll.
+   - Enter aplica al instante; blur aplica sin robar el foco.
+   - Reduce refrescos innecesarios de Lucide.
+============================================================ */
+(function(){
+  const delay=650;
+  const timers=new Map();
+  const lastValue=new Map();
+
+  function snapshot(){
+    const main=document.querySelector('main');
+    return {
+      wx:window.scrollX||0,
+      wy:window.scrollY||document.documentElement.scrollTop||0,
+      mx:main?.scrollLeft||0,
+      my:main?.scrollTop||0
+    };
+  }
+  function restore(s){
+    if(!s)return;
+    const main=document.querySelector('main');
+    if(main){main.scrollLeft=s.mx||0;main.scrollTop=s.my||0;}
+    try{window.scrollTo(s.wx||0,s.wy||0);}catch(e){}
+  }
+  function setVarAndRenderer(key,value){
+    const raw=String(value??'');
+    switch(key){
+      case 'fixed':
+        try{fixedViewSearch=raw;}catch(e){}
+        return ()=>window.renderFixedView?.();
+      case 'installments':
+        try{installmentViewSearch=raw.toLowerCase().trim();}catch(e){}
+        return ()=>window.renderInstallmentsView?.();
+      case 'variable':
+        try{variableViewSearch=raw;}catch(e){}
+        return ()=>window.renderVariableView?.();
+      case 'monthlyBoard':
+        try{monthlyBoardSearch=raw;monthlyBoardPage=1;}catch(e){}
+        return ()=>window.render?.();
+      case 'creditCards':
+        try{creditCardsSearch=raw;}catch(e){}
+        return ()=>window.renderCreditCardsView?.();
+      case 'creditMovement':
+        try{creditDetailMovementSearch=raw;creditDetailMovementPage=1;}catch(e){}
+        return ()=>window.renderCreditCardDetailView?.();
+      case 'creditPerson':
+        try{creditPersonDetailSearchV168=raw;}catch(e){}
+        return ()=>window.renderCreditPersonDetailViewV168?.();
+      default:
+        return null;
+    }
+  }
+  function renderSafely(key,value,input,refocus){
+    const renderer=setVarAndRenderer(key,value);
+    if(typeof renderer!=='function')return;
+    const snap=snapshot();
+    const start=input&&Number.isInteger(input.selectionStart)?input.selectionStart:String(value).length;
+    const end=input&&Number.isInteger(input.selectionEnd)?input.selectionEnd:start;
+    const oldScrollFn=window.scrollMainViewTopV196;
+    // Un render provocado por búsqueda no es navegación.
+    if(typeof oldScrollFn==='function')window.scrollMainViewTopV196=function(){};
+    try{renderer();}catch(err){console.error('V249 búsqueda',key,err);}
+    finally{if(typeof oldScrollFn==='function')window.scrollMainViewTopV196=oldScrollFn;}
+    const recover=()=>{
+      restore(snap);
+      if(refocus){
+        const live=document.querySelector(`[data-v237-search="${key}"]`);
+        if(live){
+          try{
+            live.value=String(value??'');
+            live.focus({preventScroll:true});
+            live.setSelectionRange?.(start,end);
+          }catch(e){}
+        }
+      }
+      restore(snap);
+      try{window.refreshIconsV246?.();}catch(e){}
+    };
+    recover();
+    requestAnimationFrame(()=>{recover();requestAnimationFrame(recover);});
+  }
+  function schedule(key,value,input){
+    const prev=timers.get(key);if(prev)clearTimeout(prev);
+    lastValue.set(key,String(value??''));
+    setVarAndRenderer(key,value); // estado actualizado ya, sin tocar DOM.
+    timers.set(key,setTimeout(()=>{
+      timers.delete(key);
+      const live=document.querySelector(`[data-v237-search="${key}"]`)||input;
+      const stillFocused=document.activeElement===live;
+      renderSafely(key,lastValue.get(key)||'',live,stillFocused);
+    },delay));
+  }
+
+  // Captura antes del oninput inline antiguo. Esta es la pieza que evita
+  // el problema de "solo me deja escribir una letra".
+  document.addEventListener('input',function(ev){
+    const input=ev.target?.closest?.('input[data-v237-search]');
+    if(!input)return;
+    const key=input.dataset.v237Search;
+    if(!key)return;
+    ev.stopImmediatePropagation();
+    schedule(key,input.value,input);
+  },true);
+
+  document.addEventListener('keydown',function(ev){
+    const input=ev.target?.closest?.('input[data-v237-search]');
+    if(!input)return;
+    const key=input.dataset.v237Search;
+    if(ev.key==='Enter'){
+      ev.preventDefault();ev.stopImmediatePropagation();
+      const t=timers.get(key);if(t)clearTimeout(t);timers.delete(key);
+      lastValue.set(key,input.value);
+      renderSafely(key,input.value,input,true);
+    }
+    if(ev.key==='Escape'){
+      ev.preventDefault();ev.stopImmediatePropagation();
+      input.value='';
+      const t=timers.get(key);if(t)clearTimeout(t);timers.delete(key);
+      lastValue.set(key,'');
+      renderSafely(key,'',input,true);
+    }
+  },true);
+
+  document.addEventListener('focusout',function(ev){
+    const input=ev.target?.closest?.('input[data-v237-search]');
+    if(!input)return;
+    const key=input.dataset.v237Search;
+    const t=timers.get(key);
+    if(t){
+      clearTimeout(t);timers.delete(key);
+      lastValue.set(key,input.value);
+      // En blur actualiza la vista, pero NO devuelve el foco al buscador.
+      setTimeout(()=>renderSafely(key,input.value,input,false),0);
+    }
+  },true);
+
+  // Compatibilidad con cualquier llamada programática existente.
+  window.v237SearchInput=function(input,kind){if(input)schedule(kind==='installments'?'installments':kind,input.value,input);};
+  window.setMonthlyBoardSearch=function(v){const i=document.querySelector('[data-v237-search="monthlyBoard"]');schedule('monthlyBoard',v,i);};
+  window.setCreditCardsSearch=function(v){const i=document.querySelector('[data-v237-search="creditCards"]');schedule('creditCards',v,i);};
+  window.setCreditCardsSearchV167=window.setCreditCardsSearch;
+  window.setCreditDetailMovementSearch=function(v){const i=document.querySelector('[data-v237-search="creditMovement"]');schedule('creditMovement',v,i);};
+  window.setCreditPersonDetailSearchV168=function(v){const i=document.querySelector('[data-v237-search="creditPerson"]');schedule('creditPerson',v,i);};
+
+  // Lucide: no volver a procesar todo si no hay iconos pendientes.
+  if(window.lucide&&typeof window.lucide.createIcons==='function'&&!window.lucide.__v249Wrapped){
+    const base=window.lucide.createIcons.bind(window.lucide);
+    let running=false;
+    window.lucide.createIcons=function(){
+      if(running)return;
+      if(!document.querySelector('i[data-lucide]'))return;
+      running=true;
+      try{return base.apply(null,arguments);}finally{running=false;}
+    };
+    window.lucide.__v249Wrapped=true;
+  }
+
+  window.runInteractionQA_V249=function(){
+    const issues=[];
+    const searches=[...document.querySelectorAll('input[data-v237-search]')];
+    searches.forEach(i=>{if(!i.dataset.v237Search)issues.push('Buscador sin clave');});
+    const visibleButtons=[...document.querySelectorAll('button')].filter(b=>b.offsetParent!==null&&!b.disabled);
+    visibleButtons.forEach(b=>{
+      const code=b.getAttribute('onclick')||'';
+      const m=code.match(/^\s*([A-Za-z_$][\w$]*)\s*\(/);
+      if(m&&typeof window[m[1]]!=='function')issues.push(`Botón con handler faltante: ${m[1]}`);
+    });
+    if(issues.length)console.warn('QA V249:',[...new Set(issues)]);
+    else console.info(`QA V249 OK · ${searches.length} buscador(es) · ${visibleButtons.length} botones visibles revisados.`);
+    return issues;
+  };
+  setTimeout(()=>{try{window.runInteractionQA_V249();}catch(e){console.warn('QA V249 omitido',e);}},250);
+})();
+</script>
+
+<script>
+/* V250 · Personas core limpio: QA sin inyección de botones */
+(function(){
+  window.runPersonCoreQA_V250=function(){
+    const issues=[];
+    document.querySelectorAll('button[title="Editar persona"]').forEach(edit=>{
+      const row=edit.parentElement;
+      const dels=row?row.querySelectorAll('button[title="Eliminar persona"]'):[];
+      if(dels.length!==1)issues.push(`Acciones duplicadas o faltantes en ${row?.querySelector('h3')?.textContent||'persona'}`);
+    });
+    ['openRenameCreditPersonModal','openDeleteCreditPersonModal','deleteCreditPerson'].forEach(fn=>{if(typeof window[fn]!=='function')issues.push(`Falta ${fn}`);});
+    if(issues.length)console.warn('QA V250 Personas:',issues);else console.info('QA V250 Personas OK');
+    return issues;
+  };
+  setTimeout(()=>{try{runPersonCoreQA_V250();}catch(e){}},200);
+})();
+</script>
 </body>
 <!-- v175: compras de terceros integradas en presupuesto y personas -->
 </html>
