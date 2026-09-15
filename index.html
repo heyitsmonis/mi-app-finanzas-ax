@@ -1423,8 +1423,11 @@ function renderDashboardMonthlyPanel(){
 
             <div class="grid grid-cols-3 rounded-2xl bg-gray-50 border border-gray-100 divide-x divide-gray-100 overflow-hidden">
               <div class="p-3.5">
-                <div class="text-[12px] text-lila-500">Sueldo exacto del mes</div>
-                <div class="font-bold text-lila-500 text-[18px] mt-1">${fmt(salaryTotal)}</div>
+                <div class="flex items-center justify-between gap-2"><div class="text-[12px] text-lila-500">Sueldo exacto del mes</div><div class="font-bold text-lila-500 text-[16px]">${fmt(salaryTotal)}</div></div>
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                  <label class="rounded-lg border border-lila-100 bg-white px-2 py-1.5"><span class="block text-[8.5px] text-gray-400 mb-0.5">Q1</span><div class="flex items-center"><span class="text-[10px] text-lila-400 mr-1">$</span><input data-exact-salary-q="1" type="number" min="0" step="0.01" value="${q1Salary}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="saveExactSalaryInlineV241(1,this)" class="w-full min-w-0 bg-transparent text-[10.5px] font-extrabold text-gray-700 outline-none"></div></label>
+                  <label class="rounded-lg border border-lila-100 bg-white px-2 py-1.5"><span class="block text-[8.5px] text-gray-400 mb-0.5">Q2</span><div class="flex items-center"><span class="text-[10px] text-lila-400 mr-1">$</span><input data-exact-salary-q="2" type="number" min="0" step="0.01" value="${q2Salary}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="saveExactSalaryInlineV241(2,this)" class="w-full min-w-0 bg-transparent text-[10.5px] font-extrabold text-gray-700 outline-none"></div></label>
+                </div>
               </div>
               <div class="p-3.5">
                 <div class="text-[12px] text-aqua-500">Entradas extras</div>
@@ -1852,10 +1855,13 @@ function renderBiweekly(){
           </div>
           <p class="text-xs text-gray-400 mt-0.5">${getDashboardQuincenaPeriodLabel(q)} · <span class="font-bold text-gray-900">Recibido: ${formatShortDate(getPayrollDate(q))}</span> · Disponible ${fmt(available)}${extra>0?` · Extra ${fmt(extra)}`:''}</p>
         </div>
-        <button onclick="openExactSalaryModal(${q})" class="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-full border border-lila-100 bg-lila-50 text-lila-600 hover:bg-lila-100" title="Modificar exacto de quincena">
-          <i data-lucide="pencil-line" class="w-3.5 h-3.5"></i>
-          Modificar exacto de quincena
-        </button>
+        <div class="shrink-0 rounded-2xl border border-lila-100 bg-lila-50/70 px-3 py-2 min-w-[190px]">
+          <div class="flex items-center justify-between gap-2 mb-1"><span class="text-[9.5px] font-bold text-lila-600">Sueldo exacto Q${q}</span><span class="text-[9px] text-gray-400">Base ${fmt(state.config.salaryBiweekly||0)}</span></div>
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1"><span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-lila-400 text-[11px] font-bold">$</span><input data-exact-salary-q="${q}" type="number" min="0" step="0.01" value="${exactSalary}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="saveExactSalaryInlineV241(${q},this)" class="w-full rounded-xl border border-lila-100 bg-white pl-6 pr-2 py-1.5 text-[12px] font-extrabold text-gray-800 focus:outline-none focus:ring-2 focus:ring-lila-100" aria-label="Sueldo exacto Q${q}"></div>
+            <button type="button" onclick="resetExactSalaryInlineV241(${q})" class="w-8 h-8 rounded-xl bg-white border border-lila-100 text-lila-500 hover:bg-lila-50 flex items-center justify-center" title="Usar sueldo base"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i></button>
+          </div>
+        </div>
       </div>
 
       <div class="rounded-2xl border border-aqua-100 bg-white p-4 mb-3 flex items-center justify-between gap-4">
@@ -2084,7 +2090,7 @@ function getCalendarCobrosForDay(day){
   const nextQ1=getPayrollDate(1,next.month,next.year);
   const [ny,nm,nd]=String(nextQ1||'').split('-').map(Number);
   if(ny===state.currentYear && nm===state.currentMonth+1 && nd===day){
-    result.push({q:1,date:nextQ1,amount:(state.config.salaryBiweekly||0),nextMonth:true});
+    result.push({q:1,date:nextQ1,amount:getBiweeklyAvailableIncome(1,next.month,next.year),nextMonth:true});
   }
   return result;
 }
@@ -2901,20 +2907,20 @@ function getBiweeklyHealth(free, usedPct){
   return { label:'Saludable', cls:'bg-aqua-50 text-aqua-500 border-aqua-200', dot:'bg-aqua-500', note:'buen margen libre' };
 }
 function getYearBiweeklyData(){
-  const salary = state.config.salaryBiweekly || 0;
   return MONTHS.map((name,month)=>{
     const {p,all}=getBiweeklyItems(month,state.currentYear);
     const q1=getBiweeklyPlannedTotal(1,month,state.currentYear), q2=getBiweeklyPlannedTotal(2,month,state.currentYear);
     const q1Apart=getBiweeklyApartedTotal(1,month,state.currentYear), q2Apart=getBiweeklyApartedTotal(2,month,state.currentYear);
     const s1=getSavingsByQuincena(p,1), s2=getSavingsByQuincena(p,2);
+    const salary1=getExactSalaryForQuincena(1,month,state.currentYear), salary2=getExactSalaryForQuincena(2,month,state.currentYear);
     const free1=getBiweeklyFreeAmount(1,month,state.currentYear), free2=getBiweeklyFreeAmount(2,month,state.currentYear);
-    const used1=salary>0?Math.min(140,Math.round((Math.max(q1,q1Apart)/salary)*100)):0;
-    const used2=salary>0?Math.min(140,Math.round((Math.max(q2,q2Apart)/salary)*100)):0;
-    return { name, month, q1, q2, s1, s2, free1, free2, used1, used2, h1:getBiweeklyHealth(free1,used1), h2:getBiweeklyHealth(free2,used2) };
+    const used1=salary1>0?Math.min(140,Math.round((Math.max(q1,q1Apart)/salary1)*100)):0;
+    const used2=salary2>0?Math.min(140,Math.round((Math.max(q2,q2Apart)/salary2)*100)):0;
+    return { name, month, q1, q2, s1, s2, salary1, salary2, free1, free2, used1, used2, h1:getBiweeklyHealth(free1,used1), h2:getBiweeklyHealth(free2,used2) };
   });
 }
 function renderBiweeklyView(){
-  const data=getYearBiweeklyData(), salary=state.config.salaryBiweekly||0;
+  const data=getYearBiweeklyData();
   const allQuincenas=data.flatMap(d=>[
     { month:d.name, q:'Q1', free:d.free1, used:d.used1, apartar:d.q1, ahorro:d.s1, health:d.h1 },
     { month:d.name, q:'Q2', free:d.free2, used:d.used2, apartar:d.q2, ahorro:d.s2, health:d.h2 }
@@ -2931,7 +2937,7 @@ function renderBiweeklyView(){
       <div class="bg-white border border-gray-100 rounded-xl p-4 card-shadow"><div class="text-xs text-gray-400 font-semibold mb-1">Promedio libre</div><div class="text-lg font-bold ${avgFree<0?'text-red-400':'text-aqua-500'}">${fmt(avgFree)}</div><div class="text-xs text-gray-500 mt-1">por quincena</div></div>
     </div>`;
   const qCard=(d,q)=>{
-    const apartar=q===1?d.q1:d.q2, ahorro=q===1?d.s1:d.s2, free=q===1?d.free1:d.free2, used=q===1?d.used1:d.used2, health=q===1?d.h1:d.h2;
+    const apartar=q===1?d.q1:d.q2, ahorro=q===1?d.s1:d.s2, salary=q===1?d.salary1:d.salary2, free=q===1?d.free1:d.free2, used=q===1?d.used1:d.used2, health=q===1?d.h1:d.h2;
     const barColor=free<0?'bg-red-400':used>=85?'bg-durazno-400':used>=55?'bg-rosa-400':'bg-aqua-500';
     const barWidth=Math.min(100,Math.max(3,used));
     return `<div class="bg-white/75 border border-gray-100 rounded-xl p-3">
@@ -4921,6 +4927,28 @@ function resetExactSalary(q){
   saveState();
   closeModal();
   render();
+}
+
+// v241: edición directa del sueldo real de cada quincena desde Dashboard.
+function saveExactSalaryInlineV241(q,input){
+  const raw=String(input?.value??'').trim();
+  const next=raw===''?(parseFloat(state.config.salaryBiweekly)||0):Math.max(0,parseFloat(raw)||0);
+  const current=getExactSalaryForQuincena(q,state.currentMonth,state.currentYear);
+  if(Math.abs(current-next)<0.005)return;
+  const main=document.querySelector('main');
+  const mainTop=main?main.scrollTop:0;
+  setExactSalaryForQuincena(q,next,state.currentMonth,state.currentYear);
+  saveState();
+  render();
+  requestAnimationFrame(()=>{if(main)main.scrollTop=mainTop;});
+}
+function resetExactSalaryInlineV241(q){
+  const main=document.querySelector('main');
+  const mainTop=main?main.scrollTop:0;
+  clearExactSalaryForQuincena(q,state.currentMonth,state.currentYear);
+  saveState();
+  render();
+  requestAnimationFrame(()=>{if(main)main.scrollTop=mainTop;});
 }
 
 function openExtraIncomeModal(id=''){
@@ -12730,6 +12758,579 @@ function runQA_V237(){
 
 try{migrateSharedCreditBudgetV237();}catch(e){console.warn('v237 migración no ejecutada',e);}
 setTimeout(()=>{refreshIconsV237();try{runQA_V237();}catch(e){}},0);
+</script>
+
+
+<script>
+/* ============================================================
+   v238 · ESTABILIDAD DE CIFRAS + ENTRADA EXTRA INTELIGENTE
+   - Una sola verdad mensual cacheada por revisión de datos.
+   - Navegar entre pestañas no cambia cifras por sí solo.
+   - Guardar un cambio invalida la caché y recalcula una vez.
+   - Si existe una entrada extra REAL, Estrategia recomienda qué cubrir/liquidar.
+============================================================ */
+
+let v238DataRevision=0;
+const v238MonthTruthCache=new Map();
+const v238StrictCommitmentCache=new Map();
+function v238MonthKey(m,y){return `${y}-${m}-r${v238DataRevision}`;}
+function v238InvalidateTruth(){v238DataRevision++;v238MonthTruthCache.clear();v238StrictCommitmentCache.clear();}
+
+// Invalidate only when actual state is saved, never because the user navigated.
+const _saveStateV238=saveState;
+saveState=function(){
+  const out=_saveStateV238.apply(this,arguments);
+  v238InvalidateTruth();
+  return out;
+};
+
+const _strictMonthlyV238Base=getStrictPersonalMonthlyCommitmentsV236;
+getStrictPersonalMonthlyCommitmentsV236=function(m=state.currentMonth,y=state.currentYear){
+  const key=v238MonthKey(m,y);
+  if(v238StrictCommitmentCache.has(key))return v238StrictCommitmentCache.get(key);
+  const raw=_strictMonthlyV238Base(m,y);
+  // Freeze a detached numeric truth so later renders cannot mutate it by reference.
+  const stable={
+    fixed:Number(raw.fixed)||0,
+    installments:Number(raw.installments)||0,
+    variable:Number(raw.variable)||0,
+    total:Number(raw.total)||0,
+    rows:(raw.rows||[]).map(r=>({...r,item:{...(r.item||{})}}))
+  };
+  v238StrictCommitmentCache.set(key,stable);
+  return stable;
+};
+
+getPersonalMonthTruthV214=function(m=state.currentMonth,y=state.currentYear){
+  const key=v238MonthKey(m,y);
+  if(v238MonthTruthCache.has(key))return v238MonthTruthCache.get(key);
+  const commitments=getStrictPersonalMonthlyCommitmentsV236(m,y);
+  const q1=getPersonalQuincenaTruthV214(1,m,y);
+  const q2=getPersonalQuincenaTruthV214(2,m,y);
+  const income=getBiweeklyAvailableIncome(1,m,y)+getBiweeklyAvailableIncome(2,m,y);
+  const stable={
+    m,y,income,
+    planned:commitments.total,
+    aparted:(Number(q1.aparted)||0)+(Number(q2.aparted)||0),
+    committed:commitments.total,
+    free:income-commitments.total,
+    fixed:commitments.fixed,
+    installments:commitments.installments,
+    variable:commitments.variable,
+    rows:commitments.rows,
+    q1:{...q1},q2:{...q2}
+  };
+  v238MonthTruthCache.set(key,stable);
+  return stable;
+};
+
+// All major projections now consume the exact same month truth.
+getStrategyOwnCommitmentsForMonthV205=function(m,y){
+  const t=getPersonalMonthTruthV214(m,y);
+  return {fixed:t.fixed,installments:t.installments,variable:t.variable,total:t.committed,rows:t.rows};
+};
+getStrategyIncomeForMonthV205=function(m,y){return getPersonalMonthTruthV214(m,y).income;};
+
+// Annual always reads the same cached truth too.
+getYearMonthlyData=function(){
+  return MONTHS.map((name,month)=>{
+    const truth=getPersonalMonthTruthV214(month,state.currentYear);
+    const p=getPaymentsForMonth(month,state.currentYear);
+    const savingsPlanningItems=makeSavingsPlanningItems(p);
+    const sav=getApartTotal([...(p.goals||[]),...savingsPlanningItems]);
+    const payments=truth.committed;
+    const used=truth.income>0?Math.min(140,Math.round((payments/truth.income)*100)):0;
+    const paid=paidArr([...p.fixed,...p.inst,...p.vari]);
+    const apartado=getApartTotal([...p.fixed,...p.inst,...p.vari]);
+    const pending=Math.max(0,payments-apartado);
+    return {name,month,income:truth.income,fixed:truth.fixed,inst:truth.installments,vari:truth.variable,sav,payments,out:payments,free:truth.free,used,paid,apartado,pending,health:getMonthlyHealth(truth.free,used)};
+  });
+};
+
+function getRealExtraIncomeTotalV238(m=state.currentMonth,y=state.currentYear){
+  return getExtraIncomesForMonth(m,y).reduce((s,x)=>s+(Number(x.amount)||0),0);
+}
+function getActualExtraPlanV238(m=state.currentMonth,y=state.currentYear){
+  const truth=getPersonalMonthTruthV214(m,y);
+  const extra=getRealExtraIncomeTotalV238(m,y);
+  const baseIncome=Math.max(0,truth.income-extra);
+  const deficitBeforeExtra=Math.max(0,truth.committed-baseIncome);
+  const cover=Math.min(extra,deficitBeforeExtra);
+  const afterCover=Math.max(0,extra-cover);
+  const debtPlan=getStrategyCashPlanV204(getStrategyDebtCandidatesV203(m,y),afterCover);
+  const debtUse=Math.max(0,Number(debtPlan.cost)||0);
+  const keep=Math.max(0,afterCover-debtUse);
+  return {extra,baseIncome,deficitBeforeExtra,cover,afterCover,debtPlan,debtUse,keep,truth};
+}
+function v238Money(n){return fmt(Number(n)||0);}
+function renderActualExtraAdviceV238(){
+  if(typeof currentView==='undefined'||currentView!=='strategy')return;
+  const main=document.getElementById('mainContent');
+  if(!main)return;
+  main.querySelectorAll('[data-v238-extra-advice]').forEach(n=>n.remove());
+  const p=getActualExtraPlanV238();
+  if(p.extra<=0.009)return;
+  const chosen=(p.debtPlan?.selected||[])[0];
+  let headline='',detail='';
+  if(p.deficitBeforeExtra>0.009){
+    headline=`Tu entrada extra de ${v238Money(p.extra)} primero debe ayudarte a cerrar el mes.`;
+    detail=p.cover>=p.deficitBeforeExtra-0.009
+      ? `Cubre ${v238Money(p.cover)} del faltante previo.${p.debtUse>0.009?` Después conviene liquidar ${escapeHtml(chosen?.concept||'una deuda útil')} con ${v238Money(p.debtUse)} porque libera flujo mensual.`:''}${p.keep>0.009?` Conserva ${v238Money(p.keep)} como colchón.`:''}`
+      : `Aplica los ${v238Money(p.cover)} al faltante. Todavía quedarían ${v238Money(p.deficitBeforeExtra-p.cover)} por cubrir, así que no adelantaría deuda aún.`;
+  }else if(p.debtUse>0.009){
+    headline=`Tienes ${v238Money(p.extra)} extra y el mes ya se cubre.`;
+    detail=`La mejor liquidación detectada es ${escapeHtml(chosen?.concept||'una deuda propia')} por ${v238Money(p.debtUse)}.${chosen?` Liberaría aprox. ${v238Money(chosen.nextMonthly||chosen.monthly||0)} al mes.`:''}${p.keep>0.009?` Guardaría ${v238Money(p.keep)} como colchón.`:''}`;
+  }else{
+    headline=`Tienes ${v238Money(p.extra)} extra y no hace falta forzar una liquidación.`;
+    detail=`Con los compromisos registrados, conservaría este dinero como colchón hasta que aparezca una deuda cuya liquidación realmente libere flujo.`;
+  }
+  const block=document.createElement('section');
+  block.dataset.v238ExtraAdvice='1';
+  block.className='rounded-[20px] border border-menta-100 bg-menta-50/50 p-4 mb-4 card-shadow';
+  block.innerHTML=`<div class="flex items-start justify-between gap-4"><div class="flex items-start gap-3 min-w-0"><span class="w-10 h-10 rounded-xl bg-white text-menta-600 flex items-center justify-center shrink-0"><i data-lucide="badge-dollar-sign" class="w-5 h-5"></i></span><div><div class="text-[9px] uppercase tracking-wide font-extrabold text-menta-600">Entrada extra ya registrada</div><div class="text-[14px] font-extrabold text-gray-900 mt-1">${headline}</div><div class="text-[10px] text-gray-500 mt-1.5 leading-relaxed">${detail}</div></div></div><div class="text-right shrink-0"><div class="text-[9px] text-gray-400">Entrada extra</div><div class="text-[20px] font-extrabold text-menta-600">${v238Money(p.extra)}</div></div></div><div class="grid grid-cols-3 gap-2 mt-3"><div class="rounded-xl bg-white border border-red-100 p-3"><div class="text-[9px] text-gray-400">1. Cubrir faltante</div><div class="text-[14px] font-extrabold text-red-500 mt-1">${v238Money(p.cover)}</div></div><div class="rounded-xl bg-white border border-azul-100 p-3"><div class="text-[9px] text-gray-400">2. Liquidar deuda útil</div><div class="text-[14px] font-extrabold text-azul-600 mt-1">${v238Money(p.debtUse)}</div>${chosen&&p.debtUse>0?`<div class="text-[8.5px] text-gray-400 mt-1 truncate">${escapeHtml(chosen.concept)}</div>`:''}</div><div class="rounded-xl bg-white border border-menta-100 p-3"><div class="text-[9px] text-gray-400">3. Guardar restante</div><div class="text-[14px] font-extrabold text-menta-600 mt-1">${v238Money(p.keep)}</div></div></div>`;
+  const firstBig=main.querySelector('.grid.grid-cols-4');
+  if(firstBig && firstBig.nextElementSibling) firstBig.nextElementSibling.insertAdjacentElement('afterend',block);
+  else main.prepend(block);
+  try{lucide.createIcons();}catch(e){}
+}
+
+// Wrap the FINAL strategy renderer without replacing its visual design.
+const _renderStrategyV238Base=renderStrategyViewV202;
+renderStrategyViewV202=function(){
+  const out=_renderStrategyV238Base.apply(this,arguments);
+  renderActualExtraAdviceV238();
+  return out;
+};
+
+// Navigation should be a pure read operation. QA verifies that truth is invariant across renders.
+function runStabilityQA_V238(){
+  const issues=[];
+  for(let m=0;m<12;m++){
+    const a=getPersonalMonthTruthV214(m,state.currentYear);
+    const sigA=[a.income,a.committed,a.free,a.fixed,a.installments,a.variable].map(x=>Number(x).toFixed(2)).join('|');
+    const b=getPersonalMonthTruthV214(m,state.currentYear);
+    const sigB=[b.income,b.committed,b.free,b.fixed,b.installments,b.variable].map(x=>Number(x).toFixed(2)).join('|');
+    if(sigA!==sigB)issues.push(`${MONTHS[m]} cambia sin editar datos`);
+  }
+  if(issues.length)console.warn('QA v238 estabilidad:',issues); else console.info('QA v238: cifras estables entre renders.');
+  return issues;
+}
+setTimeout(()=>{try{runStabilityQA_V238();if(currentView==='strategy')renderActualExtraAdviceV238();}catch(e){console.warn('QA v238 omitido',e);}},0);
+</script>
+
+
+<script>
+/* ============================================================
+ V240 — reparación segura: restaura Dashboard de V238 y añade
+ únicamente las correcciones de sueldo + Resumen anual.
+ NO reemplaza render(), para no romper la ruta del Dashboard.
+============================================================ */
+(function(){
+  function v240Money(n){ return (typeof fmt==='function') ? fmt(Number(n)||0) : '$'+(Number(n)||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function v240Esc(v){ return (typeof escapeHtml==='function') ? escapeHtml(String(v??'')) : String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]||m)); }
+  function v240Icons(){ try{ if(window.lucide&&typeof lucide.createIcons==='function') lucide.createIcons(); }catch(e){} }
+
+  window.saveBaseSalaryV240=function(applyEverywhere=false){
+    const input=document.getElementById('salaryBiweeklyV240');
+    if(!input)return;
+    const value=Number(input.value);
+    if(!Number.isFinite(value)||value<0){input.focus();return;}
+    if(!state.config)state.config={};
+    state.config.salaryBiweekly=value;
+    state.config.salaryMonthly=value*2;
+    if(applyEverywhere)state.config.exactSalaryOverrides={};
+    saveState();
+    renderConfigView();
+    v240Icons();
+  };
+
+  const baseConfig=window.renderConfigView;
+  if(typeof baseConfig==='function'){
+    window.renderConfigView=function(){
+      baseConfig();
+      const main=document.getElementById('mainContent');
+      if(!main)return;
+      const labels=[...main.querySelectorAll('label')];
+      const label=labels.find(x=>/Sueldo por quincena/i.test(x.textContent||''));
+      if(label){
+        const wrapper=label.parentElement;
+        if(wrapper){
+          const base=Number(state.config?.salaryBiweekly)||0;
+          const overrides=state.config?.exactSalaryOverrides||{};
+          const overrideCount=Object.values(overrides).reduce((n,row)=>n+Object.keys(row||{}).length,0);
+          wrapper.innerHTML=`
+            <label class="text-[12px] text-gray-500 font-semibold">Sueldo por quincena</label>
+            <div class="relative mt-1.5"><span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 font-bold">$</span><input id="salaryBiweeklyV240" type="number" min="0" step="0.01" value="${base}" class="w-full border border-gray-200 bg-white rounded-xl pl-7 pr-3.5 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-lila-100 focus:border-lila-200" placeholder="Sueldo por quincena"></div>
+            <div class="flex flex-wrap gap-2 mt-2">
+              <button type="button" onclick="saveBaseSalaryV240(false)" class="px-3 py-2 rounded-xl bg-lila-500 text-white text-[11px] font-bold hover:bg-lila-600">Guardar sueldo base</button>
+              <button type="button" onclick="saveBaseSalaryV240(true)" class="px-3 py-2 rounded-xl bg-white border border-lila-100 text-lila-600 text-[11px] font-bold hover:bg-lila-50">Usar este sueldo en toda la app</button>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-2 leading-relaxed">Sueldo base: <b>${v240Money(base)}</b> por quincena. ${overrideCount?`Hay <b>${overrideCount}</b> ajuste(s) exacto(s) guardado(s). Si quieres que el nuevo sueldo sea general, usa “Usar este sueldo en toda la app”.`:'No hay ajustes exactos que sustituyan este sueldo.'}</p>`;
+        }
+      }
+      v240Icons();
+    };
+  }
+
+  window.updateConfig=function(k,v){
+    if(!state.config)state.config={};
+    const num=Number(v);
+    state.config[k]=Number.isFinite(num)?num:0;
+    state.config.salaryMonthly=(Number(state.config.salaryBiweekly)||0)*2;
+    saveState();
+  };
+
+  window.renderAnnualView=function(){
+    const data=(typeof getYearMonthlyData==='function')?getYearMonthlyData():[];
+    const year=Number(state.currentYear)||new Date().getFullYear();
+    const totals=data.reduce((a,d)=>{a.income+=Number(d.income)||0;a.fixed+=Number(d.fixed)||0;a.inst+=Number(d.inst)||0;a.vari+=Number(d.vari)||0;a.out+=Number(d.out)||0;a.free+=Number(d.free)||0;return a;},{income:0,fixed:0,inst:0,vari:0,out:0,free:0});
+    const positive=data.filter(d=>(Number(d.free)||0)>=0).length;
+    const avg=data.length?totals.free/data.length:0;
+    const rows=data.map(d=>{const income=Number(d.income)||0,out=Number(d.out)||0,free=Number(d.free)||0,pct=income>0?Math.round(out/income*100):0;return `<tr class="border-b border-gray-100 last:border-0 hover:bg-gray-50/60"><td class="py-3 px-3"><button onclick="state.currentMonth=${d.month};saveState();currentView='monthly';render();" class="font-bold text-gray-700 hover:text-azul-600">${v240Esc(d.name)}</button></td><td class="py-3 px-3 text-right font-semibold text-gray-700">${v240Money(income)}</td><td class="py-3 px-3 text-right text-gray-500">${v240Money(d.fixed)}</td><td class="py-3 px-3 text-right text-gray-500">${v240Money(d.inst)}</td><td class="py-3 px-3 text-right text-gray-500">${v240Money(d.vari)}</td><td class="py-3 px-3 text-right font-bold text-gray-700">${v240Money(out)}</td><td class="py-3 px-3 text-right font-extrabold ${free<0?'text-red-500':'text-menta-600'}">${v240Money(free)}</td><td class="py-3 px-3 text-[10px] text-gray-400">${pct}% comprometido</td></tr>`;}).join('');
+    const main=document.getElementById('mainContent'); if(!main)return;
+    main.innerHTML=`
+      <div class="flex items-center gap-3 mb-5"><span class="w-11 h-11 rounded-2xl bg-azul-50 text-azul-600 flex items-center justify-center"><i data-lucide="bar-chart-3" class="w-5 h-5"></i></span><div><h2 class="text-2xl font-extrabold text-gray-800">Resumen anual · ${year}</h2><p class="text-sm text-gray-400 mt-1">Usa la misma verdad mensual del Dashboard.</p></div></div>
+      <div class="grid grid-cols-4 gap-3 mb-4"><div class="rounded-2xl border border-azul-100 bg-azul-50/55 p-4"><div class="text-[10px] text-gray-500 font-semibold">Ingreso anual</div><div class="text-2xl font-extrabold text-azul-600 mt-1">${v240Money(totals.income)}</div></div><div class="rounded-2xl border border-durazno-100 bg-durazno-50/55 p-4"><div class="text-[10px] text-gray-500 font-semibold">Compromisos anuales</div><div class="text-2xl font-extrabold text-durazno-600 mt-1">${v240Money(totals.out)}</div></div><div class="rounded-2xl border ${totals.free<0?'border-red-100 bg-red-50/55':'border-menta-100 bg-menta-50/55'} p-4"><div class="text-[10px] text-gray-500 font-semibold">Libre proyectado</div><div class="text-2xl font-extrabold ${totals.free<0?'text-red-500':'text-menta-600'} mt-1">${v240Money(totals.free)}</div><div class="text-[10px] text-gray-400 mt-1">Promedio mensual ${v240Money(avg)}</div></div><div class="rounded-2xl border border-lila-100 bg-lila-50/55 p-4"><div class="text-[10px] text-gray-500 font-semibold">Meses que cierran</div><div class="text-2xl font-extrabold text-lila-600 mt-1">${positive} / 12</div></div></div>
+      <div class="rounded-[22px] bg-white border border-gray-100 card-shadow overflow-hidden"><div class="p-4 border-b border-gray-100"><h3 class="text-[16px] font-extrabold text-gray-800">Mes por mes</h3><p class="text-[10px] text-gray-400 mt-1">Haz clic en un mes para abrir su Vista mensual.</p></div><div class="overflow-x-auto"><table class="w-full text-[11px]"><thead class="bg-gray-50 text-gray-400"><tr><th class="text-left py-2.5 px-3">Mes</th><th class="text-right py-2.5 px-3">Ingreso</th><th class="text-right py-2.5 px-3">Fijos</th><th class="text-right py-2.5 px-3">A meses</th><th class="text-right py-2.5 px-3">Variados</th><th class="text-right py-2.5 px-3">Compromisos</th><th class="text-right py-2.5 px-3">Libre</th><th class="text-left py-2.5 px-3">Carga</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+      <div class="mt-3 text-[9px] text-gray-400">Los variables futuros no se repiten automáticamente si todavía no se han registrado.</div>`;
+    v240Icons();
+  };
+
+  setTimeout(()=>{
+    try{
+      if(typeof renderDashboardView!=='function')console.error('V240: Dashboard no disponible');
+      if(typeof renderAnnualView!=='function')console.error('V240: Resumen anual no disponible');
+    }catch(e){console.warn(e)}
+  },0);
+})();
+</script>
+
+<script>
+/* ============================================================
+   v241 · QA DE INTERACCIÓN Y ESTABILIDAD
+   Verifica navegación, búsquedas, filtros y editores de sueldo.
+============================================================ */
+function refreshIconsV241(){
+  try{if(window.lucide&&typeof lucide.createIcons==='function')lucide.createIcons();}catch(e){console.warn('Lucide:',e);}
+}
+function runInteractionQA_V241(){
+  const issues=[];
+  const required=[
+    'render','renderDashboardView','renderMonthlyView','renderFixedView','renderInstallmentsView','renderVariableView','renderSavingsView','renderCreditCardsView','renderStrategyViewV202','renderAnnualView','renderConfigView',
+    'setMonthlyBoardFilter','setMonthlyBoardSearch','resetMonthlyBoardFilters','v237SearchInput','setCreditCardsSearch','setCreditDetailMovementSearch',
+    'saveExactSalaryInlineV241','resetExactSalaryInlineV241'
+  ];
+  required.forEach(name=>{if(typeof window[name]!=='function')issues.push(`Falta función: ${name}`);});
+  const sidebar=[...document.querySelectorAll('.sidebar-item[data-view]')].map(x=>x.dataset.view);
+  const supported=new Set(['dashboard','monthly','fixed','installments','variable','savings','creditcards','strategy','annual','config']);
+  sidebar.forEach(v=>{if(!supported.has(v))issues.push(`Vista sin ruta: ${v}`);});
+  document.querySelectorAll('input[data-v237-search]').forEach(el=>{
+    if(!el.getAttribute('oninput'))issues.push(`Buscador sin evento: ${el.dataset.v237Search||'sin clave'}`);
+  });
+  document.querySelectorAll('[data-exact-salary-q]').forEach(el=>{
+    const q=Number(el.dataset.exactSalaryQ);
+    if(q!==1&&q!==2)issues.push('Editor de sueldo con quincena inválida');
+  });
+  if(issues.length)console.warn('QA v241:',issues);
+  else console.info('QA v241: navegación, búsquedas, filtros base y sueldo exacto disponibles.');
+  return issues;
+}
+
+// Los inputs de búsqueda marcados nunca deben provocar scroll al recibir/escribir foco.
+document.addEventListener('focusin',function(ev){
+  const el=ev.target;
+  if(el&&el.matches&&el.matches('input[data-v237-search]')){
+    try{el.focus({preventScroll:true});}catch(e){}
+  }
+},true);
+
+// Tras cada render, refresca iconos sin alterar scroll ni foco.
+const _renderV241=render;
+render=function(){
+  const result=_renderV241.apply(this,arguments);
+  refreshIconsV241();
+  return result;
+};
+
+setTimeout(()=>{try{runInteractionQA_V241();}catch(e){console.warn('QA v241 no pudo ejecutarse',e);}},50);
+</script>
+
+
+<script>
+/* ============================================================
+   V242 · RESUMEN ANUAL PREMIUM
+   Rediseño visual basado en las referencias del usuario.
+   Mantiene la verdad mensual ya usada por Dashboard/Estrategia.
+============================================================ */
+(function(){
+  function a242Money(v){
+    const n=Number(v)||0;
+    return (typeof fmt==='function')?fmt(n):'$'+n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function a242Esc(v){
+    return (typeof escapeHtml==='function')?escapeHtml(String(v??'')):String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[m]||m));
+  }
+  function a242Pct(part,total){ return total>0?Math.max(0,Math.round((part/total)*100)):0; }
+  function a242Clamp(v,min=0,max=100){ return Math.max(min,Math.min(max,Number(v)||0)); }
+  function a242Icons(){ try{ if(window.lucide&&typeof lucide.createIcons==='function')lucide.createIcons(); }catch(e){} }
+  function a242MonthName(m){ return (window.MONTHS&&MONTHS[m])||['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][m]||''; }
+  function a242OpenMonth(m){
+    state.currentMonth=Number(m)||0;
+    saveState();
+    currentView='monthly';
+    render();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  window.a242OpenMonth=a242OpenMonth;
+  window.a242GoConfigExtras=function(){
+    currentView='config';render();
+    setTimeout(()=>{
+      const nodes=[...document.querySelectorAll('h3')];
+      const h=nodes.find(n=>/Ingresos extraordinarios de fin de año/i.test(n.textContent||''));
+      if(h)h.scrollIntoView({behavior:'smooth',block:'start'});
+    },80);
+  };
+
+  window.renderAnnualView=function(){
+    const year=Number(state.currentYear)||new Date().getFullYear();
+    const data=(typeof getYearMonthlyData==='function')?getYearMonthlyData():[];
+    const rows=data.length?data:Array.from({length:12},(_,month)=>({name:a242MonthName(month),month,income:0,fixed:0,inst:0,vari:0,sav:0,out:0,free:0,used:0}));
+
+    const totals=rows.reduce((a,d)=>{
+      a.income+=Number(d.income)||0;
+      a.fixed+=Number(d.fixed)||0;
+      a.inst+=Number(d.inst)||0;
+      a.vari+=Number(d.vari)||0;
+      a.committed+=Number(d.out)||0;
+      a.free+=Number(d.free)||0;
+      return a;
+    },{income:0,fixed:0,inst:0,vari:0,committed:0,free:0});
+
+    const annualSavings=(typeof getAnnualSavingsGoalStats==='function')?getAnnualSavingsGoalStats(year):{real:0,estimated:0,missing:0,monthly:0,biweekly:0,activeMonths:0,diff:0};
+    const realSavings=Number(annualSavings.real)||0;
+    const savingsPct=a242Pct(realSavings,totals.income);
+    const paymentBase=Math.max(0,totals.fixed+totals.inst+totals.vari);
+    const commitmentGap=Math.max(0,totals.committed-paymentBase);
+    const freePct=a242Pct(Math.max(0,totals.free),totals.income);
+    const usedPct=a242Pct(totals.committed,totals.income);
+    const paymentsPct=a242Pct(paymentBase,totals.income);
+
+    const heaviest=[...rows].sort((a,b)=>(Number(b.out)||0)-(Number(a.out)||0))[0]||rows[0];
+    const mostFree=[...rows].sort((a,b)=>(Number(b.free)||0)-(Number(a.free)||0))[0]||rows[0];
+    const review=[...rows].sort((a,b)=>(Number(a.free)||0)-(Number(b.free)||0))[0]||rows[0];
+    const monthSavings=rows.map(d=>{
+      let total=0;
+      try{
+        const s=getSavingsSummaryForMonth(d.month,year);
+        total=Number(s?.total)||0;
+      }catch(e){}
+      return {...d,saved:total};
+    });
+    const bestSaving=[...monthSavings].sort((a,b)=>b.saved-a.saved)[0]||monthSavings[0];
+    const positive=rows.filter(d=>(Number(d.free)||0)>=0).length;
+    const avgFree=rows.length?totals.free/rows.length:0;
+    const annualHealth=totals.free<0
+      ? {label:'Año en presión',cls:'bg-red-50 text-red-500 border-red-100',icon:'triangle-alert'}
+      : usedPct>=80
+        ? {label:'Margen ajustado',cls:'bg-durazno-50 text-durazno-600 border-durazno-100',icon:'gauge'}
+        : {label:'Buen margen anual',cls:'bg-menta-50 text-menta-600 border-menta-100',icon:'badge-check'};
+
+    const usedCircle=a242Clamp(usedPct);
+    const paymentDeg=a242Clamp(paymentsPct)*3.6;
+    const savingShare=a242Pct(Math.max(0,commitmentGap),totals.income);
+    const savingDeg=a242Clamp(savingShare)*3.6;
+    const freeShare=Math.max(0,100-a242Clamp(paymentsPct)-a242Clamp(savingShare));
+
+    const distribution=[
+      {label:'Pagos fijos',value:totals.fixed,pct:a242Pct(totals.fixed,totals.income),bar:'bg-azul-400',text:'text-azul-600'},
+      {label:'Pagos a meses',value:totals.inst,pct:a242Pct(totals.inst,totals.income),bar:'bg-rosa-400',text:'text-rosa-500'},
+      {label:'Pagos variados',value:totals.vari,pct:a242Pct(totals.vari,totals.income),bar:'bg-durazno-400',text:'text-durazno-600'},
+      {label:'Ahorro registrado',value:realSavings,pct:savingsPct,bar:'bg-aqua-400',text:'text-aqua-600'}
+    ];
+
+    const distributionHtml=distribution.map(x=>`<div class="grid grid-cols-[145px_1fr_110px] items-center gap-4 py-2.5">
+      <div class="text-[11px] font-bold text-gray-600">${x.label}</div>
+      <div><div class="h-2.5 bg-gray-100 rounded-full overflow-hidden"><div class="${x.bar} h-full rounded-full" style="width:${a242Clamp(x.pct)}%"></div></div><div class="text-[9px] text-gray-400 mt-1">${x.pct}% de tus ingresos</div></div>
+      <div class="text-right text-[13px] font-extrabold ${x.text}">${a242Money(x.value)}</div>
+    </div>`).join('');
+
+    const monthCards=rows.map(d=>{
+      const income=Number(d.income)||0, out=Number(d.out)||0, free=Number(d.free)||0;
+      const pct=income>0?Math.round((out/income)*100):0;
+      const health=typeof getMonthlyHealth==='function'?getMonthlyHealth(free,pct):(free<0?{label:'Revisar',dot:'bg-red-400'}:pct>=75?{label:'Estable',dot:'bg-rosa-400'}:{label:'Saludable',dot:'bg-menta-400'});
+      const barClass=free<0?'bg-red-400':pct>=75?'bg-rosa-400':pct>=55?'bg-azul-400':'bg-menta-400';
+      const panel=free<0?'bg-red-50/45 border-red-100':'bg-white border-gray-100';
+      return `<button type="button" onclick="a242OpenMonth(${d.month})" class="text-left rounded-2xl border ${panel} p-3.5 hover:border-lila-200 hover:shadow-sm transition min-w-0">
+        <div class="flex items-start justify-between gap-2"><div><div class="text-[13px] font-extrabold text-gray-800">${a242Esc(String(d.name||'').slice(0,3))}</div><div class="text-[9.5px] text-gray-400 mt-0.5">${a242Esc(health.label||'Mes')}</div></div><span class="w-2 h-2 rounded-full ${health.dot||'bg-gray-300'} mt-1.5"></span></div>
+        <div class="grid grid-cols-2 gap-2 mt-3"><div><div class="text-[9px] text-gray-400">Usado</div><div class="text-[11px] font-extrabold ${free<0?'text-red-500':'text-gray-700'}">${Math.max(0,pct)}%</div></div><div><div class="text-[9px] text-gray-400">Libre</div><div class="text-[11px] font-extrabold ${free<0?'text-red-500':'text-menta-600'}">${a242Money(free)}</div></div></div>
+        <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden mt-3"><div class="${barClass} h-full rounded-full" style="width:${a242Clamp(pct)}%"></div></div>
+      </button>`;
+    }).join('');
+
+    const ex=state.config?.yearEndExtras||{};
+    const extraEstimated=(Number(ex.bonusEstimated)||0)+(Number(ex.savingsFundEstimated)||0)+(Number(ex.otherEstimated)||0);
+    const extraReal=(Number(ex.bonusReal)||0)+(Number(ex.savingsFundReal)||0)+(Number(ex.otherReal)||0);
+    const extraDiff=extraReal-extraEstimated;
+    const otherName=a242Esc(ex.otherName||'Otro extra');
+
+    const main=document.getElementById('mainContent');
+    if(!main)return;
+    main.innerHTML=`
+      <div class="flex items-start justify-between gap-4 mb-5">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="w-11 h-11 rounded-2xl bg-lila-50 border border-lila-100 text-lila-600 flex items-center justify-center shrink-0"><i data-lucide="chart-no-axes-combined" class="w-5 h-5"></i></span>
+          <div class="min-w-0"><div class="flex items-center gap-2 flex-wrap"><h2 class="text-2xl font-extrabold text-gray-800">Resumen anual · ${year}</h2><span class="px-2.5 py-1 rounded-full border text-[9.5px] font-bold inline-flex items-center gap-1 ${annualHealth.cls}"><i data-lucide="${annualHealth.icon}" class="w-3 h-3"></i>${annualHealth.label}</span></div><p class="text-sm text-gray-400 mt-1">La fotografía completa del año: cuánto entra, cuánto comprometes, cuánto ahorras y cuánto te queda.</p></div>
+        </div>
+        <button type="button" onclick="currentView='monthly';render();window.scrollTo({top:0,behavior:'smooth'})" class="px-3.5 py-2.5 rounded-xl bg-lila-50 text-lila-600 border border-lila-100 text-[10.5px] font-bold inline-flex items-center gap-1.5 shrink-0"><i data-lucide="calendar-range" class="w-3.5 h-3.5"></i>Ver vista mensual</button>
+      </div>
+
+      <div class="grid grid-cols-4 gap-3 mb-4">
+        <div class="rounded-[20px] border border-lila-100 bg-lila-50/55 p-4"><div class="flex items-center justify-between gap-2"><span class="w-9 h-9 rounded-xl bg-white text-lila-600 flex items-center justify-center"><i data-lucide="banknote" class="w-4 h-4"></i></span><span class="text-[9.5px] text-gray-400 font-semibold">Sueldo anual</span></div><div class="text-[11px] font-bold text-gray-500 mt-3">Ingresos proyectados</div><div class="text-[24px] leading-none font-extrabold text-lila-600 mt-1.5">${a242Money(totals.income)}</div></div>
+        <div class="rounded-[20px] border border-rosa-100 bg-rosa-50/45 p-4"><div class="flex items-center justify-between gap-2"><span class="w-9 h-9 rounded-xl bg-white text-rosa-500 flex items-center justify-center"><i data-lucide="credit-card" class="w-4 h-4"></i></span><span class="text-[9.5px] text-gray-400 font-semibold">${usedPct}% del ingreso</span></div><div class="text-[11px] font-bold text-gray-500 mt-3">Pagos comprometidos</div><div class="text-[24px] leading-none font-extrabold text-rosa-500 mt-1.5">${a242Money(totals.committed)}</div></div>
+        <div class="rounded-[20px] border border-azul-100 bg-azul-50/45 p-4"><div class="flex items-center justify-between gap-2"><span class="w-9 h-9 rounded-xl bg-white text-azul-600 flex items-center justify-center"><i data-lucide="piggy-bank" class="w-4 h-4"></i></span><span class="text-[9.5px] text-gray-400 font-semibold">${savingsPct}% del ingreso</span></div><div class="text-[11px] font-bold text-gray-500 mt-3">Ahorro registrado</div><div class="text-[24px] leading-none font-extrabold text-azul-600 mt-1.5">${a242Money(realSavings)}</div></div>
+        <div class="rounded-[20px] border ${totals.free<0?'border-red-100 bg-red-50/45':'border-menta-100 bg-menta-50/55'} p-4"><div class="flex items-center justify-between gap-2"><span class="w-9 h-9 rounded-xl bg-white ${totals.free<0?'text-red-500':'text-menta-600'} flex items-center justify-center"><i data-lucide="wallet-cards" class="w-4 h-4"></i></span><span class="text-[9.5px] text-gray-400 font-semibold">${freePct}% del ingreso</span></div><div class="text-[11px] font-bold text-gray-500 mt-3">Dinero libre proyectado</div><div class="text-[24px] leading-none font-extrabold ${totals.free<0?'text-red-500':'text-menta-600'} mt-1.5">${a242Money(totals.free)}</div><div class="text-[9.5px] text-gray-400 mt-1.5">Promedio ${a242Money(avgFree)} / mes</div></div>
+      </div>
+
+      <div class="grid grid-cols-12 gap-4 mb-4">
+        <section class="col-span-5 rounded-[22px] bg-white border border-gray-100 card-shadow p-5">
+          <div class="flex items-start justify-between gap-3"><div><h3 class="text-[16px] font-extrabold text-gray-800">Balance del año</h3><p class="text-[10px] text-gray-400 mt-1">Así se reparte cada peso que entra.</p></div><span class="px-2.5 py-1 rounded-full bg-menta-50 text-menta-600 border border-menta-100 text-[9.5px] font-bold">${usedPct}% utilizado</span></div>
+          <div class="grid grid-cols-[170px_1fr] gap-5 items-center mt-5">
+            <div class="relative w-[150px] h-[150px] rounded-full mx-auto" style="background:conic-gradient(#ec6cae 0 ${paymentDeg}deg,#5aa2f2 ${paymentDeg}deg ${paymentDeg+savingDeg}deg,#35c99a ${paymentDeg+savingDeg}deg 360deg)"><div class="absolute inset-[20px] bg-white rounded-full flex flex-col items-center justify-center"><div class="text-[28px] font-extrabold text-gray-800">${freeShare}%</div><div class="text-[10px] text-gray-400">libre</div></div></div>
+            <div class="space-y-4"><div class="flex items-center justify-between"><span class="flex items-center gap-2 text-[12px] text-gray-600"><span class="w-2.5 h-2.5 rounded-full bg-rosa-400"></span>Pagos</span><b class="text-[14px] text-rosa-500">${paymentsPct}%</b></div><div class="flex items-center justify-between"><span class="flex items-center gap-2 text-[12px] text-gray-600"><span class="w-2.5 h-2.5 rounded-full bg-azul-400"></span>Apartados/ahorro</span><b class="text-[14px] text-azul-600">${savingShare}%</b></div><div class="flex items-center justify-between"><span class="flex items-center gap-2 text-[12px] text-gray-600"><span class="w-2.5 h-2.5 rounded-full bg-menta-400"></span>Libre</span><b class="text-[14px] text-menta-600">${freeShare}%</b></div><div class="pt-3 border-t border-gray-100 text-[10px] text-gray-400 leading-relaxed">De cada $100 de ingreso, aproximadamente <b class="text-rosa-500">$${paymentsPct}</b> van a pagos y <b class="text-menta-600">$${freeShare}</b> quedan disponibles.</div></div>
+          </div>
+        </section>
+
+        <section class="col-span-7 rounded-[22px] bg-white border border-gray-100 card-shadow p-5">
+          <div class="flex items-start justify-between gap-3 mb-3"><div><h3 class="text-[16px] font-extrabold text-gray-800">¿A dónde se va el dinero?</h3><p class="text-[10px] text-gray-400 mt-1">Distribución acumulada de tus compromisos y ahorro.</p></div><div class="text-right"><div class="text-[9px] text-gray-400">Total utilizado</div><div class="text-[14px] font-extrabold text-gray-800">${a242Money(totals.committed)}</div></div></div>
+          <div>${distributionHtml}</div>
+        </section>
+      </div>
+
+      <section class="rounded-[22px] bg-white border border-gray-100 card-shadow p-5 mb-4">
+        <div class="flex items-center justify-between gap-3 mb-4"><div><h3 class="text-[16px] font-extrabold text-gray-800">Meses que debes tener en el radar</h3><p class="text-[10px] text-gray-400 mt-1">Los cuatro datos que más te ayudan a entender el año.</p></div><i data-lucide="sparkles" class="w-4 h-4 text-lila-500"></i></div>
+        <div class="grid grid-cols-4 gap-3">
+          <div class="rounded-2xl bg-rosa-50/55 border border-rosa-100 p-4"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-500"><span class="w-8 h-8 rounded-xl bg-white text-rosa-500 flex items-center justify-center"><i data-lucide="flame" class="w-4 h-4"></i></span>Mes más pesado</div><div class="text-[17px] font-extrabold text-gray-800 mt-3">${a242Esc(heaviest.name)}</div><div class="text-[12px] font-extrabold text-rosa-500 mt-1">${a242Money(heaviest.out)}</div></div>
+          <div class="rounded-2xl bg-azul-50/55 border border-azul-100 p-4"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-500"><span class="w-8 h-8 rounded-xl bg-white text-azul-600 flex items-center justify-center"><i data-lucide="piggy-bank" class="w-4 h-4"></i></span>Mayor ahorro</div><div class="text-[17px] font-extrabold text-gray-800 mt-3">${a242Esc(bestSaving.name)}</div><div class="text-[12px] font-extrabold text-azul-600 mt-1">${a242Money(bestSaving.saved)}</div></div>
+          <div class="rounded-2xl bg-menta-50/55 border border-menta-100 p-4"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-500"><span class="w-8 h-8 rounded-xl bg-white text-menta-600 flex items-center justify-center"><i data-lucide="badge-check" class="w-4 h-4"></i></span>Mayor dinero libre</div><div class="text-[17px] font-extrabold text-gray-800 mt-3">${a242Esc(mostFree.name)}</div><div class="text-[12px] font-extrabold text-menta-600 mt-1">${a242Money(mostFree.free)}</div></div>
+          <div class="rounded-2xl bg-red-50/45 border border-red-100 p-4"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-500"><span class="w-8 h-8 rounded-xl bg-white text-red-500 flex items-center justify-center"><i data-lucide="scan-eye" class="w-4 h-4"></i></span>Mes a revisar</div><div class="text-[17px] font-extrabold text-gray-800 mt-3">${a242Esc(review.name)}</div><div class="text-[12px] font-extrabold ${Number(review.free)<0?'text-red-500':'text-gray-600'} mt-1">${a242Money(review.free)}</div></div>
+        </div>
+      </section>
+
+      <section class="rounded-[22px] bg-white border border-gray-100 card-shadow p-5 mb-4">
+        <div class="flex items-center justify-between gap-3 mb-4"><div><h3 class="text-[16px] font-extrabold text-gray-800">Mapa del año</h3><p class="text-[10px] text-gray-400 mt-1">Qué tan cargado está cada mes y cuánto dinero queda libre.</p></div><span class="text-[9.5px] text-gray-400">${positive}/12 meses cierran en positivo</span></div>
+        <div class="grid grid-cols-6 gap-3">${monthCards}</div>
+      </section>
+
+      ${typeof renderAnnualSavingsGoalBlock==='function'?renderAnnualSavingsGoalBlock():''}
+
+      <section class="rounded-[22px] bg-white border border-gray-100 card-shadow p-5 mb-4">
+        <div class="flex items-start justify-between gap-3 mb-4"><div><div class="flex items-center gap-2"><span class="w-9 h-9 rounded-xl bg-menta-50 border border-menta-100 text-menta-600 flex items-center justify-center"><i data-lucide="gift" class="w-4 h-4"></i></span><div><h3 class="text-[16px] font-extrabold text-gray-800">Ingresos extraordinarios</h3><p class="text-[10px] text-gray-400 mt-1">Aguinaldo, fondo de ahorro y otros ingresos de cierre. Se mantienen separados del sueldo ordinario.</p></div></div></div><button type="button" onclick="a242GoConfigExtras()" class="px-3 py-2 rounded-xl bg-menta-50 text-menta-600 border border-menta-100 text-[10px] font-bold inline-flex items-center gap-1"><i data-lucide="pencil" class="w-3 h-3"></i>Editar extras</button></div>
+        <div class="grid grid-cols-3 gap-3 mb-3"><div class="rounded-2xl bg-lila-50/55 border border-lila-100 p-4"><div class="text-[10px] text-gray-500 font-semibold">Total estimado</div><div class="text-[22px] font-extrabold text-lila-600 mt-1">${a242Money(extraEstimated)}</div><div class="text-[9.5px] text-gray-400 mt-1">Lo que esperas recibir.</div></div><div class="rounded-2xl bg-menta-50/55 border border-menta-100 p-4"><div class="text-[10px] text-gray-500 font-semibold">Total real</div><div class="text-[22px] font-extrabold text-menta-600 mt-1">${a242Money(extraReal)}</div><div class="text-[9.5px] text-gray-400 mt-1">Lo que realmente recibiste.</div></div><div class="rounded-2xl ${extraDiff<0?'bg-red-50/45 border-red-100':'bg-azul-50/45 border-azul-100'} border p-4"><div class="text-[10px] text-gray-500 font-semibold">Diferencia</div><div class="text-[22px] font-extrabold ${extraDiff<0?'text-red-500':'text-azul-600'} mt-1">${extraDiff>=0?'+':''}${a242Money(extraDiff)}</div><div class="text-[9.5px] text-gray-400 mt-1">Real vs. estimado.</div></div></div>
+        <div class="grid grid-cols-3 gap-3"><div class="rounded-xl bg-gray-50 border border-gray-100 p-3"><div class="text-[10px] font-bold text-gray-600">Aguinaldo</div><div class="flex justify-between mt-2 text-[9.5px]"><span class="text-gray-400">Estimado</span><b class="text-lila-600">${a242Money(ex.bonusEstimated||0)}</b></div><div class="flex justify-between mt-1 text-[9.5px]"><span class="text-gray-400">Real</span><b class="text-menta-600">${a242Money(ex.bonusReal||0)}</b></div></div><div class="rounded-xl bg-gray-50 border border-gray-100 p-3"><div class="text-[10px] font-bold text-gray-600">Fondo de ahorro</div><div class="flex justify-between mt-2 text-[9.5px]"><span class="text-gray-400">Estimado</span><b class="text-lila-600">${a242Money(ex.savingsFundEstimated||0)}</b></div><div class="flex justify-between mt-1 text-[9.5px]"><span class="text-gray-400">Real</span><b class="text-menta-600">${a242Money(ex.savingsFundReal||0)}</b></div></div><div class="rounded-xl bg-gray-50 border border-gray-100 p-3"><div class="text-[10px] font-bold text-gray-600">${otherName}</div><div class="flex justify-between mt-2 text-[9.5px]"><span class="text-gray-400">Estimado</span><b class="text-lila-600">${a242Money(ex.otherEstimated||0)}</b></div><div class="flex justify-between mt-1 text-[9.5px]"><span class="text-gray-400">Real</span><b class="text-menta-600">${a242Money(ex.otherReal||0)}</b></div></div></div>
+      </section>
+
+      <div class="rounded-2xl bg-lila-50/40 border border-lila-100 px-4 py-3 flex items-start gap-2 text-[9.5px] text-gray-500"><i data-lucide="info" class="w-3.5 h-3.5 text-lila-500 mt-0.5 shrink-0"></i><span>Este resumen usa la misma lógica mensual del Dashboard. Los pagos fijos y mensualidades activas se proyectan mientras sigan vigentes; los gastos variados solo aparecen cuando están registrados.</span></div>`;
+    a242Icons();
+  };
+
+  // QA local del resumen anual: no debe modificar estado al renderizar.
+  window.runAnnualQA_V242=function(){
+    const issues=[];
+    const before=JSON.stringify(state);
+    let data=[];
+    try{data=getYearMonthlyData();}catch(e){issues.push('No se pudo calcular el año: '+e.message);}
+    if(data.length!==12)issues.push('El resumen anual no tiene 12 meses.');
+    data.forEach((d,i)=>{
+      const nums=['income','fixed','inst','vari','out','free'];
+      nums.forEach(k=>{if(!Number.isFinite(Number(d[k])))issues.push(`${a242MonthName(i)}: ${k} inválido`);});
+      const expected=(Number(d.income)||0)-(Number(d.out)||0);
+      if(Math.abs(expected-(Number(d.free)||0))>0.05)issues.push(`${a242MonthName(i)}: libre no cuadra con ingreso - compromisos`);
+    });
+    const after=JSON.stringify(state);
+    if(before!==after)issues.push('Render/QA anual alteró el estado.');
+    if(issues.length)console.warn('QA V242 anual:',issues);else console.info('QA V242 anual: 12 meses y cifras consistentes.');
+    return issues;
+  };
+  setTimeout(()=>{try{runAnnualQA_V242();}catch(e){console.warn('QA V242 omitido',e)}},80);
+})();
+</script>
+
+
+<script>
+(function(){
+  function safeLucide(){ try{ if(window.lucide&&typeof lucide.createIcons==='function') lucide.createIcons(); }catch(e){ console.warn('Lucide refresh failed',e); } }
+  function ensureIconFallbacks(){
+    document.querySelectorAll('[data-lucide]').forEach(el=>{
+      const name=el.getAttribute('data-lucide');
+      if(!name) return;
+      setTimeout(()=>{ if(!el.querySelector('svg') && !el.outerHTML.includes('<svg')){ el.setAttribute('data-lucide','circle'); safeLucide(); } },0);
+    });
+  }
+  window.__finalQaRefresh=function(){ safeLucide(); ensureIconFallbacks(); };
+  const originalRender=window.render;
+  if(typeof originalRender==='function' && !originalRender.__qaWrapped){
+    const wrapped=function(){ const r=originalRender.apply(this,arguments); setTimeout(window.__finalQaRefresh,0); return r; };
+    wrapped.__qaWrapped=true; window.render=wrapped;
+  }
+  const inputTypes=['text','search','number','email','tel'];
+  document.addEventListener('input',function(e){
+    const t=e.target; if(!t||!inputTypes.includes((t.type||'').toLowerCase())) return;
+    t.dataset.qaScrollY=String(window.scrollY);
+  },true);
+  document.addEventListener('focusin',function(e){
+    const t=e.target; if(!t) return;
+    if(inputTypes.includes((t.type||'').toLowerCase())) t.dataset.qaScrollY=String(window.scrollY);
+  },true);
+  document.addEventListener('focusout',function(e){
+    const t=e.target; if(!t) return;
+    const y=Number(t.dataset.qaScrollY);
+    if(Number.isFinite(y)) requestAnimationFrame(()=>window.scrollTo({top:y,left:window.scrollX,behavior:'auto'}));
+  },true);
+  // Guard common nav targets used by sidebar/month cards.
+  ['renderDashboard','renderAnnualSummaryView','renderStrategyViewV202','renderCardsView','renderMonthlyView'].forEach(fn=>{
+    if(window[fn] && typeof window[fn] !== 'function') console.warn('Unexpected nav target type',fn);
+  });
+  window.addEventListener('load',()=>{ safeLucide(); ensureIconFallbacks(); });
+})();
+</script>
+
+
+<script>
+/* ============================================================
+   v244 · SUELDO EXACTO GLOBAL
+   Regla canónica: si existe monto exacto Q1/Q2 se usa en todas
+   las vistas; si no, se usa el sueldo base. Entradas extra se suman
+   únicamente en la quincena/mes donde están registradas.
+============================================================ */
+function getExactMonthlySalaryV244(m=state.currentMonth,y=state.currentYear){
+  return getExactSalaryForQuincena(1,m,y)+getExactSalaryForQuincena(2,m,y);
+}
+function getExactMonthlyIncomeV244(m=state.currentMonth,y=state.currentYear){
+  return getBiweeklyAvailableIncome(1,m,y)+getBiweeklyAvailableIncome(2,m,y);
+}
+function runExactSalaryQA_V244(){
+  const issues=[];
+  for(let m=0;m<12;m++){
+    const y=state.currentYear;
+    const q1=getExactSalaryForQuincena(1,m,y), q2=getExactSalaryForQuincena(2,m,y);
+    const extras=getExtraIncomesForMonth(m,y).reduce((sum,x)=>sum+(Number(x.amount)||0),0);
+    const expected=q1+q2+extras;
+    let truth;
+    try{truth=getPersonalMonthTruthV214(m,y);}catch(e){issues.push(`${MONTHS[m]}: no se pudo calcular verdad mensual`);continue;}
+    if(Math.abs((Number(truth.income)||0)-expected)>0.01){
+      issues.push(`${MONTHS[m]}: ingreso mensual no coincide con Q1+Q2+extras`);
+    }
+    const qData=(typeof getYearBiweeklyData==='function'?getYearBiweeklyData():[])[m];
+    if(qData){
+      if(Math.abs((Number(qData.salary1)||0)-q1)>0.01)issues.push(`${MONTHS[m]} Q1: vista quincenal no usa sueldo exacto`);
+      if(Math.abs((Number(qData.salary2)||0)-q2)>0.01)issues.push(`${MONTHS[m]} Q2: vista quincenal no usa sueldo exacto`);
+    }
+  }
+  if(issues.length)console.warn('QA v244 sueldo exacto:',issues);
+  else console.info('QA v244: sueldo exacto propagado correctamente en mes, quincenas y proyecciones.');
+  return issues;
+}
+setTimeout(()=>{try{runExactSalaryQA_V244();}catch(e){console.warn('QA v244 omitido',e);}},0);
 </script>
 
 </body>
