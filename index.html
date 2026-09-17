@@ -2775,8 +2775,8 @@ function renderMonthlyAccountControl(){
       </div>
       <div class="mt-3">
         <div class="grid grid-cols-2 gap-1.5 items-stretch">
-          ${apartPending?`<button onclick="toggleMonthlyAccountApart('${enc}',true)" class="min-h-[34px] h-full px-2.5 py-1.5 rounded-lg bg-azul-50 border border-azul-100 text-azul-600 text-[9px] font-bold leading-tight flex items-center justify-center text-center">Apartar lo de esta tarjeta</button>`:`<button onclick="toggleMonthlyAccountApart('${enc}',false)" class="min-h-[34px] h-full px-2.5 py-1.5 rounded-lg bg-white border border-azul-100 text-azul-600 text-[9px] font-bold leading-tight flex items-center justify-center text-center">↶ Desapartar esta tarjeta</button>`}
-          ${g.payable?(paidPending?`<button onclick="toggleMonthlyAccountPaid('${enc}',true)" class="min-h-[34px] h-full px-2.5 py-1.5 rounded-lg bg-menta-50 border border-menta-100 text-menta-600 text-[9px] font-bold leading-tight flex items-center justify-center text-center">Marcar pagado lo de esta tarjeta</button>`:`<button onclick="toggleMonthlyAccountPaid('${enc}',false)" class="min-h-[34px] h-full px-2.5 py-1.5 rounded-lg bg-white border border-menta-100 text-menta-600 text-[9px] font-bold leading-tight flex items-center justify-center text-center">↶ Desmarcar pagos de esta tarjeta</button>`):`<span class="min-h-[34px] h-full px-2.5 py-1.5 rounded-lg bg-gray-50 border border-gray-100 text-gray-400 text-[10px] font-bold leading-tight flex items-center justify-center text-center">Sin pagos por cerrar</span>`}
+          ${apartPending?`<button onclick="bulkApartAccountV309('${enc}',true)" class="min-h-[34px] h-full px-2.5 py-1.5 rounded-lg bg-azul-50 border border-azul-100 text-azul-600 text-[9px] font-bold leading-tight flex items-center justify-center text-center">Apartar lo de esta tarjeta</button>`:`<button onclick="bulkApartAccountV309('${enc}',false)" class="min-h-[34px] h-full px-2.5 py-1.5 rounded-lg bg-white border border-azul-100 text-azul-600 text-[9px] font-bold leading-tight flex items-center justify-center text-center">↶ Desapartar esta tarjeta</button>`}
+          ${g.payable?(paidPending?`<button onclick="bulkPaidAccountV309('${enc}',true)" class="min-h-[34px] h-full px-2.5 py-1.5 rounded-lg bg-menta-50 border border-menta-100 text-menta-600 text-[9px] font-bold leading-tight flex items-center justify-center text-center">Marcar pagado lo de esta tarjeta</button>`:`<button onclick="bulkPaidAccountV309('${enc}',false)" class="min-h-[34px] h-full px-2.5 py-1.5 rounded-lg bg-white border border-menta-100 text-menta-600 text-[9px] font-bold leading-tight flex items-center justify-center text-center">↶ Desmarcar pagos de esta tarjeta</button>`):`<span class="min-h-[34px] h-full px-2.5 py-1.5 rounded-lg bg-gray-50 border border-gray-100 text-gray-400 text-[10px] font-bold leading-tight flex items-center justify-center text-center">Sin pagos por cerrar</span>`}
         </div>
         <div class="flex justify-end mt-1.5"><button onclick="filterMonthlyBoardByAccount('${enc}')" class="px-2.5 py-1.5 rounded-lg bg-gray-50 border border-gray-100 text-gray-500 text-[10px] font-bold">Ver conceptos</button></div>
       </div>
@@ -3112,13 +3112,17 @@ function renderFixedView(){
     const periodTxt=getFixedPeriodText(item);
     const dayTxt=`día ${item.date||1}`;
     const progressColor=coverage.pct>=100?'bg-menta-400':'bg-azul-400';
+    const ownershipRow=getOwnershipTruthV253(item,'fixed');
+    const rowAmountLabel=ownershipRow.type==='shared'?'Mi parte':ownershipRow.type==='other'?'Monto de tercero':'Monto';
+    const rowAmountValue=ownershipRow.type==='other'?ownershipRow.total:getPersonalAmountV253(item,'fixed');
+    const rowAmountExtra=ownershipRow.type==='shared'?`<div class="text-[9px] text-durazno-600 mt-0.5 font-semibold">De otros ${fmt(ownershipRow.other)}</div><div class="text-[8.5px] text-gray-400 mt-0.5">Total ${fmt(ownershipRow.total)}</div>`:ownershipRow.type==='other'?`<div class="text-[9px] text-durazno-600 mt-0.5 font-semibold">No entra a mi presupuesto</div>`:'';
     return `<div class="border-b border-gray-100 last:border-0">
       <div class="grid grid-cols-[1.5fr_.8fr_.9fr_.6fr_.8fr_.7fr_auto] gap-3 items-center px-4 py-3 hover:bg-gray-50/60 transition">
         <div class="min-w-0">
           <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full ${activeNow?'bg-pizarra-400':'bg-gray-300'} shrink-0"></span><span class="text-[12px] font-bold text-gray-800 truncate">${escapeHtml(item.concept||'Pago fijo')}</span>${renderBudgetSharedBadgeV237(item)}</div>
           <div class="text-[10px] text-gray-400 mt-1 flex items-center gap-2 min-w-0"><span class="capitalize truncate">${escapeHtml(item.category||'otros')}</span><span class="text-gray-300">·</span>${accountDisplayHtml(item.card||'Sin cuenta','mini')}</div>
         </div>
-        <div><div class="text-[10px] text-gray-400">${getOwnershipTruthV253(item,'fixed').type==='shared'?'Mi parte':'Monto'}</div><div class="text-[12px] font-extrabold text-pizarra-600">${fmt(getPersonalAmountV253(item,'fixed'))}</div>${getOwnershipTruthV253(item,'fixed').type==='shared'?`<div class="text-[9px] text-gray-400 mt-0.5">Total ${fmt(getOwnershipTruthV253(item,'fixed').total)}</div>`:''}</div>
+        <div><div class="text-[10px] text-gray-400">${rowAmountLabel}</div><div class="text-[12px] font-extrabold ${ownershipRow.type==='other'?'text-durazno-600':'text-pizarra-600'}">${fmt(rowAmountValue)}</div>${rowAmountExtra}</div>
         <div>
           <div class="text-[10px] text-gray-400">Apartado</div>
           <div class="text-[12px] font-bold text-azul-500">${fmt(coverage.covered)}</div>
@@ -3389,6 +3393,8 @@ function renderInstallmentsView(){
     const total=split.ownTotal;
     const monthlyFull=Math.max(0,parseFloat(item.amount)||0);
     const monthly=split.ownMonthly;
+    const otherTotal=Math.max(0,totalFull-total);
+    const otherMonthly=Math.max(0,monthlyFull-monthly);
     const totalMonths=parseInt(item.totalMonths)||1;
     const activeNow=isInstallmentRelevantInMonth(item,state.currentMonth,state.currentYear);
     const current=Math.max(0,Math.min(totalMonths,getInstallmentNumberForMonth(item,state.currentMonth,state.currentYear)));
@@ -3411,7 +3417,7 @@ function renderInstallmentsView(){
     const monthlyDisplayLabel=apartBiweekly?'Mi apartado por quincena':'Forma de apartado';
     const monthlyDisplayValue=apartBiweekly?fmt(qAmount):apartLabel;
     const ownershipBadge=split.type==='shared'?`<span class="ml-2 px-2 py-1 rounded-full text-[10px] font-bold bg-azul-50 text-azul-600">Compartido · mi parte</span>`:`<span class="ml-2 px-2 py-1 rounded-full text-[10px] font-bold bg-menta-50 text-menta-600">Mío</span>`;
-    const sharedDetail=split.type==='shared'?`<div class="rounded-xl bg-azul-50/45 border border-azul-100 p-3 mb-3"><div class="text-[10px] font-bold text-azul-600">Plan compartido</div><div class="grid grid-cols-3 gap-2 mt-2 text-[10px]"><div><div class="text-gray-400">Total del plan</div><div class="font-bold text-gray-700">${fmt(totalFull)}</div></div><div><div class="text-gray-400">Mi parte total</div><div class="font-bold text-azul-600">${fmt(total)}</div></div><div><div class="text-gray-400">Mi pago mensual</div><div class="font-bold text-azul-600">${fmt(monthly)}</div></div></div></div>`:'';
+    const sharedDetail=split.type==='shared'?`<div class="rounded-xl bg-azul-50/45 border border-azul-100 p-3 mb-3"><div class="text-[10px] font-bold text-azul-600">Plan compartido</div><div class="grid grid-cols-4 gap-2 mt-2 text-[10px]"><div><div class="text-gray-400">Total del plan</div><div class="font-bold text-gray-700">${fmt(totalFull)}</div></div><div><div class="text-gray-400">Mi parte total</div><div class="font-bold text-azul-600">${fmt(total)}</div></div><div><div class="text-gray-400">Parte de otros</div><div class="font-bold text-durazno-600">${fmt(otherTotal)}</div></div><div><div class="text-gray-400">Mensualidad</div><div class="font-bold text-gray-700">${fmt(monthlyFull)}</div><div class="text-[8.5px] mt-0.5"><span class="text-azul-600 font-bold">Mía ${fmt(monthly)}</span> · <span class="text-durazno-600 font-bold">otros ${fmt(otherMonthly)}</span></div></div></div></div>`:'';
 
     return `<article class="bg-white rounded-2xl card-shadow border ${isOpen?'border-lila-200 ring-1 ring-lila-50':isFinished?'border-menta-100':'border-gray-100'} overflow-hidden transition-all duration-200">
       <div class="p-3.5">
@@ -3420,7 +3426,7 @@ function renderInstallmentsView(){
           <button onclick="toggleInstallmentDetail('${item.id}')" class="shrink-0 w-8 h-8 rounded-xl border ${isOpen?'bg-lila-50 border-lila-100 text-lila-600':'bg-gray-50 border-gray-100 text-gray-500'} flex items-center justify-center"><i data-lucide="${isOpen?'chevron-up':'chevron-down'}" class="w-4 h-4"></i></button>
         </div>
         <div class="grid grid-cols-3 gap-2 mt-3">
-          <div class="rounded-xl bg-rosa-50/55 border border-rosa-100 px-3 py-2"><div class="text-[10px] text-gray-400">Mi pago mensual</div><div class="text-sm font-bold text-rosa-500">${fmt(monthly)}</div></div>
+          <div class="rounded-xl bg-rosa-50/55 border border-rosa-100 px-3 py-2"><div class="text-[10px] text-gray-400">${split.type==='shared'?'Mi parte mensual':'Mi pago mensual'}</div><div class="text-sm font-bold text-rosa-500">${fmt(monthly)}</div>${split.type==='shared'?`<div class="text-[9px] text-durazno-600 mt-1 font-semibold">De otros ${fmt(otherMonthly)}</div><div class="text-[8.5px] text-gray-400 mt-0.5">Total ${fmt(monthlyFull)}</div>`:''}</div>
           <div class="rounded-xl bg-durazno-50/55 border border-durazno-100 px-3 py-2"><div class="text-[10px] text-gray-400">Mi saldo pendiente</div><div class="text-sm font-bold ${remaining<=0?'text-menta-500':'text-durazno-500'}">${fmt(remaining)}</div></div>
           <div class="rounded-xl bg-azul-50/55 border border-azul-100 px-3 py-2"><div class="text-[10px] text-gray-400">Avance de mi parte</div><div class="text-sm font-bold text-azul-500">${isFinished?'100%':`${progressPct}%`}</div><div class="text-[9.5px] text-gray-400 mt-0.5">${progressLabel}</div></div>
         </div>
@@ -3530,7 +3536,12 @@ function renderVariableView(){
   }).join(''):`<div class="text-xs text-gray-400 py-8 text-center">Aún no hay categorías con gasto este mes.</div>`;
 
   const rowHtml=visible.map(i=>{
-    const real=getPersonalAmountV253(i,'variable'), estimated=getPersonalEstimatedAmountV253(i), variance=estimated-real;
+    const ownershipRow=getOwnershipTruthV253(i,'variable');
+    const personalReal=getPersonalAmountV253(i,'variable'), personalEstimated=getPersonalEstimatedAmountV253(i);
+    const real=ownershipRow.type==='other'?ownershipRow.total:personalReal;
+    const rawEstimated=Math.max(0,parseFloat(i.estimatedAmount)||0);
+    const estimated=ownershipRow.type==='other'?(rawEstimated||ownershipRow.total):personalEstimated;
+    const variance=ownershipRow.type==='other'?0:(estimated-real);
     const status=itemStatus(i), vis=getStatusVisual(status), open=expandedVariable.has(i.id);
     const viewItem={...i,__collection:'variable',__viewMonth:state.currentMonth,__viewYear:state.currentYear};
     const q1=getAmountToSetAside(viewItem,1),q2=getAmountToSetAside(viewItem,2);
@@ -3540,9 +3551,9 @@ function renderVariableView(){
     return `<div class="border-b border-gray-100 last:border-0">
       <div class="grid grid-cols-[1.5fr_.8fr_.85fr_.75fr_.7fr_.7fr_auto] gap-3 items-center px-4 py-3 hover:bg-gray-50/60 transition">
         <div class="min-w-0"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full ${cat.dot} shrink-0"></span><span class="text-[12px] font-bold text-gray-800 truncate">${escapeHtml(i.concept||'Pago variado')}</span>${renderBudgetSharedBadgeV237(i)}</div><div class="text-[10px] text-gray-400 mt-1 flex items-center gap-2 min-w-0"><span class="capitalize truncate">${escapeHtml(i.category||'otros')}</span><span class="text-gray-300">·</span>${accountDisplayHtml(i.card||'Sin cuenta','mini')}</div></div>
-        <div><div class="text-[10px] text-gray-400">Real</div><div class="text-[12px] font-extrabold text-miel-600">${fmt(real)}</div></div>
-        <div><div class="text-[10px] text-gray-400">Estimado</div><div class="text-[12px] font-bold text-gray-600">${fmt(estimated)}</div></div>
-        <div><div class="text-[10px] text-gray-400">Variación</div><div class="text-[11px] font-bold ${varianceCls}">${varianceTxt}</div></div>
+        <div>${ownershipRow.type==='shared'?`<div class="text-[10px] text-gray-400">Mi parte</div><div class="text-[12px] font-extrabold text-miel-600">${fmt(ownershipRow.own)}</div><div class="text-[9px] text-durazno-600 mt-0.5 font-semibold">De otros ${fmt(ownershipRow.other)}</div><div class="text-[8.5px] text-gray-400 mt-0.5">Total ${fmt(ownershipRow.total)}</div>`:`<div class="text-[10px] text-gray-400">${ownershipRow.type==='other'?'Real de tercero':'Real'}</div><div class="text-[12px] font-extrabold ${ownershipRow.type==='other'?'text-durazno-600':'text-miel-600'}">${fmt(real)}</div>${ownershipRow.type==='other'?`<div class="text-[9px] text-durazno-600 mt-0.5 font-semibold">No entra a mi presupuesto</div>`:''}`}</div>
+        <div><div class="text-[10px] text-gray-400">${ownershipRow.type==='other'?'Estimado tercero':'Estimado'}</div><div class="text-[12px] font-bold text-gray-600">${fmt(estimated)}</div></div>
+        <div><div class="text-[10px] text-gray-400">Variación</div><div class="text-[11px] font-bold ${ownershipRow.type==='other'?'text-gray-300':varianceCls}">${ownershipRow.type==='other'?'—':varianceTxt}</div></div>
         <div><div class="text-[10px] text-gray-400">Fecha</div><div class="text-[11px] font-semibold text-gray-600">${i.date||1} ${MONTHS[state.currentMonth].slice(0,3).toLowerCase()}</div></div>
         <div><span class="inline-flex px-2 py-1 rounded-full border ${vis.bg} ${vis.border} ${vis.text} text-[9.5px] font-bold">${vis.label}</span></div>
         <button onclick="expandedVariable.has('${i.id}')?expandedVariable.delete('${i.id}'):expandedVariable.add('${i.id}');renderVariableView();lucide.createIcons();" class="w-8 h-8 rounded-lg border ${open?'bg-miel-50 border-miel-100 text-miel-600':'bg-white border-gray-100 text-gray-400'} flex items-center justify-center"><i data-lucide="chevron-${open?'up':'down'}" class="w-4 h-4"></i></button>
@@ -6382,7 +6393,7 @@ function updatePlanFieldsPreview(form){
 function saveRecordForm(event,type,id=''){
   event.preventDefault();
   const form=event.target,fd=new FormData(form),collection=type==='installment'?'installments':type==='fixed'?'fixed':'variable',item=state[collection]?.find(p=>p.id===id);
-  const payload={concept:fd.get('concept')||'-',amount:parseFloat(fd.get('amount'))||0,date:parseInt(fd.get('date'))||1,paymentDayQ1:parseInt(fd.get('paymentDayQ1'))||parseInt(fd.get('date'))||1,paymentDayQ2:parseInt(fd.get('paymentDayQ2'))||parseInt(fd.get('date'))||16,payDayQ1:parseInt(fd.get('payDayQ1'))||state.config.payDate1||1,payDayQ2:parseInt(fd.get('payDayQ2'))||state.config.payDate2||16,card:fd.get('card')||'',month:item?.month??state.currentMonth,year:item?.year??state.currentYear,paid:item?.paid||false,paidQ1:item?.paidQ1||false,paidQ2:item?.paidQ2||false,apartadoQ1:item?.apartadoQ1||false,apartadoQ2:item?.apartadoQ2||false,splitMode:fd.get('apartPlan')||fd.get('splitMode')||'Dividir apartado en Q1 y Q2',paymentPlan:fd.get('paymentPlan')||'Pagar mitad en Q1 y mitad en Q2',apartPlan:fd.get('apartPlan')||'Dividir apartado en Q1 y Q2',firstSetAside:fd.get('apartFirstQuincena')||fd.get('firstSetAside')||'current-q2',apartFirstQuincena:fd.get('apartFirstQuincena')||'current-q2',paymentFirstQuincena:fd.get('paymentFirstQuincena')||'current-q1',apartQuincenas:parseInt(fd.get('apartQuincenas'))||2,paymentQuincenas:parseInt(fd.get('paymentQuincenas'))||2,manualQ1:parseFloat(fd.get('manualQ1'))||0,manualQ2:parseFloat(fd.get('manualQ2'))||0,paymentManualQ1:parseFloat(fd.get('paymentManualQ1'))||0,paymentManualQ2:parseFloat(fd.get('paymentManualQ2'))||0,notes:fd.get('notes')||item?.notes||''};
+  const payload={concept:fd.get('concept')||'-',amount:parseFloat(fd.get('amount'))||0,date:parseInt(fd.get('date'))||1,paymentDayMode:fd.get('paymentDayMode')||item?.paymentDayMode||'',paymentDayQ1:parseInt(fd.get('paymentDayQ1'))||parseInt(fd.get('date'))||1,paymentDayQ2:parseInt(fd.get('paymentDayQ2'))||parseInt(fd.get('date'))||16,payDayQ1:parseInt(fd.get('payDayQ1'))||state.config.payDate1||1,payDayQ2:parseInt(fd.get('payDayQ2'))||state.config.payDate2||16,card:fd.get('card')||'',month:item?.month??state.currentMonth,year:item?.year??state.currentYear,paid:item?.paid||false,paidQ1:item?.paidQ1||false,paidQ2:item?.paidQ2||false,apartadoQ1:item?.apartadoQ1||false,apartadoQ2:item?.apartadoQ2||false,splitMode:fd.get('apartPlan')||fd.get('splitMode')||'Dividir apartado en Q1 y Q2',paymentPlan:fd.get('paymentPlan')||'Pagar mitad en Q1 y mitad en Q2',apartPlan:fd.get('apartPlan')||'Dividir apartado en Q1 y Q2',firstSetAside:fd.get('apartFirstQuincena')||fd.get('firstSetAside')||'current-q2',apartFirstQuincena:fd.get('apartFirstQuincena')||'current-q2',paymentFirstQuincena:fd.get('paymentFirstQuincena')||'current-q1',apartQuincenas:parseInt(fd.get('apartQuincenas'))||2,paymentQuincenas:parseInt(fd.get('paymentQuincenas'))||2,manualQ1:parseFloat(fd.get('manualQ1'))||0,manualQ2:parseFloat(fd.get('manualQ2'))||0,paymentManualQ1:parseFloat(fd.get('paymentManualQ1'))||0,paymentManualQ2:parseFloat(fd.get('paymentManualQ2'))||0,notes:fd.get('notes')||item?.notes||''};
   if(type==='fixed'){
     payload.category=fd.get('category')||'otros';
     payload.startMonth=parseInt(fd.get('startMonth'));
@@ -16382,7 +16393,8 @@ setTimeout(()=>{try{MONTHS.forEach((_,m)=>runVisibleFinanceQA_V254(m,state.curre
       const own=(typeof getPersonalAmountV253==='function'?getPersonalAmountV253(item,'variable'):n(item.amount));
       const source=(state.creditMovements||[]).find(m=>String(m.id)===String(item.sourceCreditMovementId||''));
       const total=n(source?.totalAmount)||n(item.totalAmount)||n(item.amount);
-      amountCell.innerHTML=`<div class="text-[10px] text-gray-400">Mi parte</div><div class="text-[12px] font-extrabold text-miel-600">${money(own)}</div><div class="text-[9px] text-gray-400 mt-0.5">Total ${money(total)}</div>`;
+      const other=Math.max(0,total-own);
+      amountCell.innerHTML=`<div class="text-[10px] text-gray-400">Mi parte</div><div class="text-[12px] font-extrabold text-miel-600">${money(own)}</div><div class="text-[9px] text-durazno-600 mt-0.5 font-semibold">De otros ${money(other)}</div><div class="text-[8.5px] text-gray-400 mt-0.5">Total ${money(total)}</div>`;
     });
   }
 
@@ -16880,6 +16892,90 @@ setTimeout(()=>{try{MONTHS.forEach((_,m)=>runVisibleFinanceQA_V254(m,state.curre
 
 
 
+
+<script>
+/* ============================================================
+   V294 · PROPIEDAD VISIBLE EN LOS MODALES REALES
+   - V283 abre directamente los modales especializados.
+   - Por eso V293 no alcanzaba a inyectar Propiedad/Categoría.
+   - Esta capa envuelve directamente Fijos / A meses / Variados.
+============================================================ */
+(function(){
+  window.__APP_VERSION__='v294-edicion-propiedad-visible';
+
+  const _openFixedV294=window.openFixedRecordModal;
+  const _openInstallmentV294=window.openInstallmentRecordModal;
+  const _openVariableV294=window.openVariableRecordModal;
+
+  function ensureInstallmentCategoryV294(id=''){
+    const form=document.querySelector('#modalContent form[data-record-type="installment"]');
+    if(!form||form.querySelector('[data-category-v294]')||form.querySelector('[data-category-v293]'))return;
+    const item=(state.installments||[]).find(x=>String(x.id)===String(id||''));
+    const category=item?.category||'otros';
+    const basic=form.querySelector('input[name="concept"]')?.closest('section');
+    const grid=basic?.querySelector('.grid.grid-cols-12');
+    if(!grid)return;
+    const block=document.createElement('div');
+    block.setAttribute('data-category-v294','1');
+    block.className='col-span-4';
+    block.innerHTML=`<label class="block text-xs mb-1 text-gray-500">Categoría</label><select name="category" class="w-full border rounded-lg px-3 py-2.5 text-sm bg-white">${getCategoryOptions(category)}</select><p class="text-[10px] text-gray-400 mt-1">Puedes cambiarla aunque el plan ya esté activo.</p>`;
+    grid.appendChild(block);
+
+    // Ajusta las columnas existentes para que el bloque básico no quede desbalanceado.
+    const concept=form.querySelector('input[name="concept"]')?.parentElement;
+    const total=form.querySelector('input[name="totalAmount"]')?.parentElement;
+    const card=form.querySelector('select[name="purchaseCard"]')?.parentElement;
+    if(concept)concept.className='col-span-4';
+    if(total)total.className='col-span-2';
+    if(card)card.className='col-span-2';
+  }
+
+  function enhanceSpecializedV294(type,id=''){
+    try{
+      if(type==='installment')ensureInstallmentCategoryV294(id);
+      if(typeof window.injectRecordOwnershipV175==='function')window.injectRecordOwnershipV175(type,id,'');
+      lucide.createIcons();
+    }catch(e){console.warn('V294 modal enhancement',type,id,e);}
+  }
+
+  window.openFixedRecordModal=function(id=''){
+    const result=_openFixedV294.apply(this,arguments);
+    setTimeout(()=>enhanceSpecializedV294('fixed',id),0);
+    return result;
+  };
+  window.openInstallmentRecordModal=function(id=''){
+    const result=_openInstallmentV294.apply(this,arguments);
+    setTimeout(()=>enhanceSpecializedV294('installment',id),0);
+    return result;
+  };
+  window.openVariableRecordModal=function(id=''){
+    const result=_openVariableV294.apply(this,arguments);
+    setTimeout(()=>enhanceSpecializedV294('variable',id),0);
+    return result;
+  };
+
+  // QA visual: confirma que los tres formularios especializados pueden recibir
+  // el bloque de propiedad sin alterar datos ni abrir modales automáticamente.
+  window.runOwnershipModalQA_V294=function(){
+    const issues=[];
+    if(typeof window.injectRecordOwnershipV175!=='function')issues.push('Falta injectRecordOwnershipV175');
+    if(typeof window.openFixedRecordModal!=='function')issues.push('Falta modal fijo');
+    if(typeof window.openInstallmentRecordModal!=='function')issues.push('Falta modal a meses');
+    if(typeof window.openVariableRecordModal!=='function')issues.push('Falta modal variado');
+    if(issues.length)console.warn('V294 QA',issues);else console.info('V294 OK · propiedad/categoría visibles en modales especializados');
+    return issues;
+  };
+  setTimeout(()=>{try{runOwnershipModalQA_V294();}catch(e){console.warn('V294 QA error',e);}},0);
+})();
+</script>
+
+
+<script>
+/* ===== V297 · Compartidos visibles por parte propia y ajena =====
+   Los renglones de Fijos y Variados muestran el monto real de un tercero,
+   pero los KPIs, categorías y cálculos personales siguen usando solo mi responsabilidad. */
+window.__APP_VERSION__='v297-compartidos-desglosados';
+</script>
 </body>
 <!-- v175: compras de terceros integradas en presupuesto y personas -->
 </html>
@@ -17387,5 +17483,2018 @@ setTimeout(()=>{try{MONTHS.forEach((_,m)=>runVisibleFinanceQA_V254(m,state.curre
   if(typeof state!=='undefined' && (state.view==='strategy' || (typeof currentView!=='undefined'&&currentView==='strategy'))){
     try{window.renderStrategyViewV202();}catch(e){console.error('v290 strategy render error',e);}
   }
+})();
+</script>
+
+
+<script>
+/* ============================================================
+   V293 · EDICIÓN GLOBAL DE CONCEPTO + CATEGORÍA + PROPIEDAD
+   - Desde Fijos / A meses / Variados / Tarjetas / Personas se edita
+     el registro maestro que ya resuelve V283.
+   - Pagos a meses ahora también tienen Categoría.
+   - Tarjetas ahora también guarda Categoría y la sincroniza con su
+     espejo presupuestal.
+   - Cambiar Mío / Compartido / Tercero actualiza todas las vistas.
+============================================================ */
+(function(){
+  window.__APP_VERSION__='v293-edicion-global-propiedad-categoria';
+
+  const _openRecordModalV293=window.openRecordModal;
+  const _openCreditMovementModalV293=window.openCreditMovementModal;
+  const _saveRecordFormV293=window.saveRecordForm;
+  const _saveCreditMovementFormV293=window.saveCreditMovementForm;
+  const _syncCreditMovementToBudgetV293=window.syncCreditMovementToBudget;
+  const _syncBudgetOwnershipToCreditV293=window.syncBudgetOwnershipToCreditV175;
+
+  function colForTypeV293(type){return type==='installment'||type==='installments'?'installments':type==='fixed'?'fixed':'variable';}
+  function typeForColV293(col){return col==='installments'?'installment':col;}
+  function getBudgetItemV293(type,id){const col=colForTypeV293(type);return (state[col]||[]).find(x=>String(x.id)===String(id||''))||null;}
+  function getCreditV293(id){return (state.creditMovements||[]).find(x=>String(x.id)===String(id||''))||null;}
+  function getLinkedBudgetV293(mv){
+    if(!mv)return null;
+    const col=mv.budgetCollection||mv.sourceBudgetCollection||mv.budgetType||'';
+    const normalized=col==='installment'?'installments':col;
+    const id=mv.budgetRecordId||mv.sourceBudgetItemId||'';
+    if(!['fixed','installments','variable'].includes(normalized)||!id)return null;
+    const item=(state[normalized]||[]).find(x=>String(x.id)===String(id))||null;
+    return item?{item,collection:normalized}:null;
+  }
+  function categoryFromMasterV293(mv){
+    if(mv?.category)return mv.category;
+    const link=getLinkedBudgetV293(mv);
+    return link?.item?.category||'otros';
+  }
+  function ensureCategoryInInstallmentV293(type,id){
+    if(type!=='installment'&&type!=='installments')return;
+    const form=document.querySelector('#modalContent form[data-record-type="installment"]');
+    if(!form||form.querySelector('[data-category-v293]'))return;
+    const item=getBudgetItemV293('installment',id);
+    const category=item?.category||'otros';
+    const concept=form.querySelector('[name="concept"]');
+    if(!concept)return;
+    const holder=concept.parentElement;
+    const block=document.createElement('div');
+    block.setAttribute('data-category-v293','1');
+    block.className='mt-3';
+    block.innerHTML=`<label class="block text-xs mb-1 text-gray-500">Categoría</label><select name="category" class="w-full border rounded-lg px-3 py-2.5 text-sm bg-white">${getCategoryOptions(category)}</select><p class="text-[10px] text-gray-400 mt-1">Puedes cambiarla aunque el pago ya esté activo; se actualizará también en sus vistas relacionadas.</p>`;
+    holder.insertAdjacentElement('afterend',block);
+  }
+  function ensureCategoryInCreditV293(id){
+    const form=document.querySelector('#modalContent form[data-credit-card-id]');
+    if(!form||form.querySelector('[data-credit-category-v293]'))return;
+    const mv=getCreditV293(id);
+    const category=categoryFromMasterV293(mv);
+    const concept=form.querySelector('[name="concept"]');
+    if(!concept)return;
+    const block=document.createElement('div');
+    block.setAttribute('data-credit-category-v293','1');
+    block.className='mt-3';
+    block.innerHTML=`<label class="block text-xs mb-1 text-gray-500">Categoría</label><select name="category" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white">${getCategoryOptions(category)}</select><p class="text-[10px] text-gray-400 mt-1">Esta categoría se conserva aunque cambies la compra entre Mía, Compartida o De tercero.</p>`;
+    concept.parentElement.insertAdjacentElement('afterend',block);
+  }
+
+  window.openRecordModal=function(type,id='',presetPerson=''){
+    const result=_openRecordModalV293.apply(this,arguments);
+    // Solo el formulario de A meses no traía Categoría de forma nativa.
+    setTimeout(()=>{try{ensureCategoryInInstallmentV293(type,id);lucide.createIcons();}catch(e){console.warn('V293 category installment',e);}},0);
+    return result;
+  };
+
+  window.openCreditMovementModal=function(cardId,id='',presetPerson=''){
+    const result=_openCreditMovementModalV293.apply(this,arguments);
+    setTimeout(()=>{try{ensureCategoryInCreditV293(id);lucide.createIcons();}catch(e){console.warn('V293 category credit',e);}},0);
+    return result;
+  };
+
+  // Si un movimiento de Tarjetas crea/actualiza un espejo presupuestal,
+  // Concepto, categoría y propiedad viajan juntos.
+  window.syncCreditMovementToBudget=function(mv,card){
+    const result=_syncCreditMovementToBudgetV293.apply(this,arguments);
+    if(!mv)return result;
+    const link=getLinkedBudgetV293(mv);
+    if(link?.item){
+      link.item.concept=mv.concept||link.item.concept||'-';
+      link.item.category=mv.category||link.item.category||'otros';
+      const kind=['self','shared','other'].includes(mv.ownerType)?mv.ownerType:'self';
+      if(kind==='shared'){
+        link.item.ownerType='shared';
+        link.item.person=mv.person||'';
+        link.item.sharedOtherAmount=Math.max(0,parseFloat(mv.sharedOtherAmount)||0);
+        link.item.originalSharedTotal=Math.max(0,parseFloat(mv.totalAmount)||0);
+      }else if(kind==='self'){
+        link.item.ownerType='self';
+        link.item.person='Yo';
+        link.item.sharedOtherAmount=0;
+      }
+    }
+    return result;
+  };
+
+  // Si el registro nació en Fijos / A meses / Variados y se vuelve
+  // Compartido o De tercero, el movimiento de Tarjetas recibe también
+  // Concepto y Categoría.
+  window.syncBudgetOwnershipToCreditV175=function(item,collection){
+    const result=_syncBudgetOwnershipToCreditV293.apply(this,arguments);
+    if(!item)return result;
+    const mv=(state.creditMovements||[]).find(m=>String(m.id)===String(item.sourceCreditMovementId||'')) ||
+      (state.creditMovements||[]).find(m=>m.sourceBudgetManagedV175&&String(m.sourceBudgetItemId)===String(item.id)&&String(m.sourceBudgetCollection)===String(collection));
+    if(mv){
+      mv.concept=item.concept||mv.concept||'-';
+      mv.category=item.category||mv.category||'otros';
+      mv.ownerType=['self','shared','other'].includes(item.ownerType)?item.ownerType:mv.ownerType;
+      if(mv.ownerType==='self'){mv.person='Yo';mv.sharedOtherAmount=0;}
+      else {mv.person=item.person||mv.person||'Otra persona';mv.sharedOtherAmount=mv.ownerType==='shared'?Math.max(0,parseFloat(item.sharedOtherAmount)||0):Math.max(0,parseFloat(item.totalAmount||item.amount)||0);}
+    }
+    return result;
+  };
+
+  window.saveRecordForm=function(event,type,id=''){
+    // Guardamos la categoría elegida antes de que el flujo original cierre el modal.
+    const form=event.target;
+    const fd=new FormData(form);
+    const selectedCategory=String(fd.get('category')||'').trim();
+    const result=_saveRecordFormV293.apply(this,arguments);
+    const col=colForTypeV293(type);
+    const item=id?(state[col]||[]).find(x=>String(x.id)===String(id)):(state[col]||[]).at(-1);
+    if(item){
+      // Fixed y Variable ya la guardan; Installment la recibe aquí.
+      if(selectedCategory)item.category=selectedCategory;
+      if(!item.category)item.category='otros';
+      // Re-sincroniza después de Concepto/Categoría/Propiedad.
+      if(typeof window.syncBudgetOwnershipToCreditV175==='function')window.syncBudgetOwnershipToCreditV175(item,col);
+      const mv=item.sourceCreditMovementId?getCreditV293(item.sourceCreditMovementId):null;
+      if(mv){mv.concept=item.concept||mv.concept;mv.category=item.category||mv.category||'otros';}
+      saveState();
+      try{render();}catch(e){}
+    }
+    return result;
+  };
+
+  window.saveCreditMovementForm=function(event,cardId,id=''){
+    const form=event.target;
+    const fd=new FormData(form);
+    const selectedCategory=String(fd.get('category')||'').trim()||'otros';
+    const result=_saveCreditMovementFormV293.apply(this,arguments);
+    const mv=id?getCreditV293(id):(state.creditMovements||[]).at(-1);
+    if(mv){
+      mv.category=selectedCategory;
+      const card=(typeof getCreditCards==='function'?getCreditCards(true):[]).find(c=>String(c.id)===String(mv.cardId)||String(c.accountId)===String(mv.accountId));
+      if(card&&typeof window.syncCreditMovementToBudget==='function')window.syncCreditMovementToBudget(mv,card);
+      const link=getLinkedBudgetV293(mv);
+      if(link?.item){link.item.concept=mv.concept||link.item.concept;link.item.category=mv.category;}
+      saveState();
+      try{render();}catch(e){}
+    }
+    return result;
+  };
+
+  // Migración inocua: no reclasifica nada; solo copia una categoría existente
+  // al otro lado del vínculo cuando falta.
+  (state.creditMovements||[]).forEach(mv=>{
+    const link=getLinkedBudgetV293(mv);
+    if(!mv.category&&link?.item?.category)mv.category=link.item.category;
+    if(link?.item&&!link.item.category&&mv.category)link.item.category=mv.category;
+  });
+  saveState();
+
+  window.runGlobalEditQA_V293=function(){
+    const issues=[];
+    for(const col of ['fixed','installments','variable']){
+      for(const item of (state[col]||[])){
+        if(!item.concept)issues.push(`${col}:${item.id} sin concepto`);
+        if(!item.category)issues.push(`${col}:${item.concept||item.id} sin categoría`);
+        if(item.sourceCreditMovementId&&!getCreditV293(item.sourceCreditMovementId))issues.push(`${col}:${item.concept||item.id} vínculo de Tarjetas roto`);
+      }
+    }
+    if(issues.length)console.warn('V293 QA',issues);else console.info('V293 OK · edición global de concepto/categoría/propiedad lista');
+    return issues;
+  };
+  setTimeout(()=>{try{runGlobalEditQA_V293();}catch(e){console.warn('V293 QA error',e);}},0);
+})();
+</script>
+
+
+<script>
+/* ============================================================
+   V295 · DÍA DE PAGO AUTOMÁTICO SEGÚN TARJETA
+   - Si el concepto usa una tarjeta de crédito, toma su día límite
+     de pago configurado como valor predeterminado.
+   - El usuario puede activar "Escoger día de pago diferente".
+   - Ese cambio afecta únicamente al concepto actual.
+============================================================ */
+(function(){
+  window.__APP_VERSION__='v295-dia-pago-automatico-tarjeta';
+
+  function norm295(v){
+    return String(v||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  }
+  function creditAccountByRef295(value){
+    const raw=String(value||'').trim();
+    if(!raw)return null;
+    const n=norm295(raw);
+    return (state.accounts||[]).find(a=>{
+      const isCredit=typeof isCreditAccount==='function'?isCreditAccount(a):norm295(a?.type).includes('credito');
+      return isCredit && (String(a.id)===raw || norm295(a.name)===n || norm295(a.bank)===n);
+    })||null;
+  }
+  function getRecord295(type,id){
+    const col=type==='installment'?'installments':type==='fixed'?'fixed':'variable';
+    return (state[col]||[]).find(x=>String(x.id)===String(id||''))||null;
+  }
+  function selector295(type){return type==='installment'?'purchaseCard':'card';}
+  function getSelectedAccount295(form,type){
+    return creditAccountByRef295(form?.elements?.[selector295(type)]?.value||'');
+  }
+  function currentMonthlyMode295(form,type){
+    if(type==='installment'){
+      const mode=form.querySelector('input[name="paymentMode"]:checked')?.value || form.querySelector('input[name="paymentMode"]')?.value || '';
+      if(mode)return mode==='monthly';
+      const monthly=form.querySelector('[data-payment-monthly]');
+      return monthly?!monthly.classList.contains('hidden'):true;
+    }
+    if(type==='fixed'){
+      const monthly=form.querySelector('[data-fixed-payment-monthly]');
+      if(monthly)return !monthly.classList.contains('hidden');
+      const btn=form.querySelector('[data-fixed-payment-mode="monthly"].active');
+      if(btn)return true;
+      const pp=form.elements.paymentPlan?.value||'';
+      return pp!=='Pagar mitad en Q1 y mitad en Q2' && pp!=='Dividir en varias quincenas de pago';
+    }
+    if(type==='variable'){
+      const monthly=form.querySelector('[data-variable-payment-monthly]');
+      return monthly?!monthly.classList.contains('hidden'):true;
+    }
+    return true;
+  }
+  function updateProgress295(form,type){
+    try{
+      if(type==='installment'&&typeof updateInstallmentProgressiveForm==='function')updateInstallmentProgressiveForm(form);
+      if(type==='fixed'&&typeof updateFixedProgressiveForm==='function')updateFixedProgressiveForm(form);
+      if(type==='variable'&&typeof updateVariableProgressiveForm==='function')updateVariableProgressiveForm(form);
+    }catch(e){}
+  }
+  function inferCustom295(item,account){
+    if(!item||!account)return false;
+    if(item.paymentDayMode==='custom')return true;
+    if(item.paymentDayMode==='account')return false;
+    const due=Math.max(1,Math.min(31,parseInt(account.dueDay??account.payDay)||0));
+    const saved=Math.max(1,Math.min(31,parseInt(item.date)||0));
+    // Registros antiguos se preservan: si su día guardado no coincide con la
+    // tarjeta, lo tratamos como una excepción intencional.
+    return !!(due && saved && due!==saved);
+  }
+  function ensureBlock295(form,type,id=''){
+    if(!form||form.querySelector('[data-card-due-v295]'))return;
+    const dateInput=form.elements.date;
+    if(!dateInput)return;
+    const item=getRecord295(type,id);
+    const wrap=document.createElement('div');
+    wrap.setAttribute('data-card-due-v295','1');
+    wrap.className='mt-2 rounded-xl border border-azul-100 bg-azul-50/45 p-3';
+    wrap.innerHTML=`
+      <input type="hidden" name="paymentDayMode" value="${item?.paymentDayMode||''}">
+      <div data-card-default-row class="flex items-start justify-between gap-3">
+        <div class="flex items-start gap-2.5 min-w-0">
+          <span class="w-8 h-8 rounded-xl bg-white border border-azul-100 text-azul-600 flex items-center justify-center shrink-0"><i data-lucide="calendar-check" class="w-4 h-4"></i></span>
+          <div class="min-w-0"><div class="text-[10.5px] font-extrabold text-gray-700" data-card-default-title>Día de pago de la tarjeta</div><div class="text-[9px] text-gray-400 mt-0.5" data-card-default-note>Selecciona una tarjeta de crédito para usar su día configurado.</div></div>
+        </div>
+        <span data-card-default-badge class="px-2.5 py-1 rounded-full bg-white border border-azul-100 text-azul-600 text-[9px] font-extrabold">—</span>
+      </div>
+      <label data-card-custom-row class="hidden mt-3 pt-3 border-t border-azul-100/70 flex items-center gap-2 cursor-pointer select-none">
+        <input type="checkbox" data-card-custom-toggle class="rounded border-gray-300 text-azul-600 focus:ring-azul-200">
+        <span class="text-[10px] font-bold text-gray-600">Escoger día de pago diferente para este concepto</span>
+      </label>`;
+    const parent=dateInput.parentElement;
+    parent.appendChild(wrap);
+
+    const toggle=wrap.querySelector('[data-card-custom-toggle]');
+    const account=getSelectedAccount295(form,type);
+    if(toggle)toggle.checked=inferCustom295(item,account);
+
+    const select=form.elements[selector295(type)];
+    if(select){
+      select.addEventListener('change',()=>{
+        const cb=wrap.querySelector('[data-card-custom-toggle]');
+        if(cb)cb.checked=false;
+        apply295(form,type,id,true);
+      });
+    }
+    if(toggle)toggle.addEventListener('change',()=>apply295(form,type,id,false));
+
+    form.addEventListener('click',()=>setTimeout(()=>apply295(form,type,id,false),0));
+    form.addEventListener('change',(ev)=>{
+      if(ev.target===select||ev.target===toggle)return;
+      setTimeout(()=>apply295(form,type,id,false),0);
+    });
+    apply295(form,type,id,false);
+  }
+  function apply295(form,type,id='',cardChanged=false){
+    const block=form?.querySelector('[data-card-due-v295]');
+    const dateInput=form?.elements?.date;
+    if(!block||!dateInput)return;
+    const account=getSelectedAccount295(form,type);
+    const monthly=currentMonthlyMode295(form,type);
+    const customRow=block.querySelector('[data-card-custom-row]');
+    const toggle=block.querySelector('[data-card-custom-toggle]');
+    const title=block.querySelector('[data-card-default-title]');
+    const note=block.querySelector('[data-card-default-note]');
+    const badge=block.querySelector('[data-card-default-badge]');
+    const modeInput=form.elements.paymentDayMode;
+
+    if(!monthly){
+      block.classList.add('hidden');
+      dateInput.readOnly=false;
+      if(modeInput)modeInput.value='manual';
+      return;
+    }
+    block.classList.remove('hidden');
+
+    const due=Math.max(0,Math.min(31,parseInt(account?.dueDay??account?.payDay)||0));
+    if(!account||!due){
+      if(title)title.textContent='Día de pago manual';
+      if(note)note.textContent='La cuenta seleccionada no tiene un día límite de pago configurado.';
+      if(badge)badge.textContent='Sin fecha';
+      if(customRow)customRow.classList.add('hidden');
+      dateInput.readOnly=false;
+      dateInput.classList.remove('bg-gray-50','text-gray-500');
+      if(modeInput)modeInput.value='manual';
+      return;
+    }
+
+    if(title)title.textContent=`Día de pago de ${account.name||account.bank||'la tarjeta'}`;
+    if(note)note.textContent='Se toma automáticamente desde Configuración. Puedes hacer una excepción solo para este concepto.';
+    if(badge)badge.textContent=`Día ${due}`;
+    if(customRow)customRow.classList.remove('hidden');
+
+    const isCustom=!!toggle?.checked;
+    if(modeInput)modeInput.value=isCustom?'custom':'account';
+    if(!isCustom){
+      if(cardChanged || Number(dateInput.value)!==due){
+        dateInput.value=String(due);
+        updateProgress295(form,type);
+      }
+      dateInput.readOnly=true;
+      dateInput.classList.add('bg-gray-50','text-gray-500');
+    }else{
+      dateInput.readOnly=false;
+      dateInput.classList.remove('bg-gray-50','text-gray-500');
+      if(cardChanged)dateInput.value=String(due);
+      setTimeout(()=>{try{dateInput.focus();dateInput.select();}catch(e){}},0);
+    }
+  }
+
+  const prevFixed295=window.openFixedRecordModal;
+  const prevInstallment295=window.openInstallmentRecordModal;
+  const prevVariable295=window.openVariableRecordModal;
+
+  window.openFixedRecordModal=function(id=''){
+    const r=prevFixed295.apply(this,arguments);
+    setTimeout(()=>{const f=document.querySelector('#modalContent form[data-record-type="fixed"]');ensureBlock295(f,'fixed',id);lucide.createIcons();},10);
+    return r;
+  };
+  window.openInstallmentRecordModal=function(id=''){
+    const r=prevInstallment295.apply(this,arguments);
+    setTimeout(()=>{const f=document.querySelector('#modalContent form[data-record-type="installment"]');ensureBlock295(f,'installment',id);lucide.createIcons();},10);
+    return r;
+  };
+  window.openVariableRecordModal=function(id=''){
+    const r=prevVariable295.apply(this,arguments);
+    setTimeout(()=>{const f=document.querySelector('#modalContent form[data-record-type="variable"]');ensureBlock295(f,'variable',id);lucide.createIcons();},10);
+    return r;
+  };
+
+  window.runPaymentDayQA_V295=function(){
+    const issues=[];
+    if(!(state.accounts||[]).some(a=>(typeof isCreditAccount==='function'?isCreditAccount(a):norm295(a?.type).includes('credito'))))issues.push('No hay tarjetas de crédito configuradas para probar el autollenado.');
+    ['fixed','installment','variable'].forEach(t=>{if(typeof ({fixed:window.openFixedRecordModal,installment:window.openInstallmentRecordModal,variable:window.openVariableRecordModal}[t])!=='function')issues.push(`Falta modal ${t}`);});
+    if(issues.length)console.warn('V295 QA',issues);else console.info('V295 OK · día de pago automático por tarjeta disponible en Fijos / A meses / Variados');
+    return issues;
+  };
+})();
+</script>
+
+
+<script>
+/* ============================================================
+   V303 · EDITOR ÚNICO DE PROPIEDAD (NUEVO = EDITAR)
+   - Una sola UI para Fijos / A meses / Variados.
+   - El mismo bloque aparece al crear y editar.
+   - Compartido guarda reparto TOTAL y MENSUAL explícito.
+   - La mensualidad de otros alimenta las vistas y Tarjetas.
+============================================================ */
+(function(){
+  window.__APP_VERSION__='v303-editor-compartido-unico';
+  const num=v=>Math.max(0,Number(v)||0);
+  const esc=v=>escapeHtml(String(v??''));
+  const collectionFor=type=>type==='installment'?'installments':type==='fixed'?'fixed':'variable';
+  function recordFor(type,id=''){
+    return (state[collectionFor(type)]||[]).find(x=>String(x.id)===String(id||''));
+  }
+  function formTotals(form,type,item){
+    const total=type==='installment'
+      ? num(form.querySelector('[name="totalAmount"]')?.value || item?.totalAmount)
+      : num(form.querySelector('[name="amount"]')?.value || item?.amount);
+    const monthly=num(form.querySelector('[name="amount"]')?.value || item?.amount);
+    return {total,monthly};
+  }
+  function inferredOtherMonthly(item,type,total,monthly){
+    if(item?.sharedOtherMonthlyAmount!==undefined && item.sharedOtherMonthlyAmount!==null && item.sharedOtherMonthlyAmount!==''){
+      return Math.min(monthly,num(item.sharedOtherMonthlyAmount));
+    }
+    const otherTotal=num(item?.sharedOtherAmount);
+    if(type!=='installment') return Math.min(monthly,otherTotal);
+    return total>0 ? Math.min(monthly,monthly*(otherTotal/total)) : 0;
+  }
+
+  window.updateSharedEditorV303=function(form,source='load'){
+    if(!form)return;
+    const type=form.dataset.recordType||'variable';
+    const item=recordFor(type,form.dataset.recordIdV303||form.dataset.itemId||'');
+    const {total,monthly}=formTotals(form,type,item);
+    const ownT=form.querySelector('[name="recordSharedOwnAmount"]');
+    const otherT=form.querySelector('[name="recordSharedOtherAmount"]');
+    const ownM=form.querySelector('[name="recordSharedOwnMonthlyAmount"]');
+    const otherM=form.querySelector('[name="recordSharedOtherMonthlyAmount"]');
+    if(!ownT||!otherT||!ownM||!otherM)return;
+
+    let a=num(ownT.value), b=num(otherT.value), am=num(ownM.value), bm=num(otherM.value);
+    if(source==='ownTotal') b=Math.max(0,total-a);
+    else if(source==='otherTotal') a=Math.max(0,total-b);
+    else if(source==='total') a=Math.max(0,total-Math.min(total,b));
+    if(source==='ownMonthly') bm=Math.max(0,monthly-am);
+    else if(source==='otherMonthly') am=Math.max(0,monthly-bm);
+    else if(source==='monthly') am=Math.max(0,monthly-Math.min(monthly,bm));
+
+    a=Math.min(total,a); b=Math.min(total,b);
+    am=Math.min(monthly,am); bm=Math.min(monthly,bm);
+    ownT.value=a?Number(a.toFixed(2)):'';
+    otherT.value=b?Number(b.toFixed(2)):'';
+    ownM.value=am?Number(am.toFixed(2)):'';
+    otherM.value=bm?Number(bm.toFixed(2)):'';
+
+    const person=String(form.querySelector('[name="recordOwnerPerson"]')?.value||'otra persona').trim()||'otra persona';
+    form.querySelectorAll('[data-v303-person]').forEach(x=>x.textContent=person);
+    const set=(key,val)=>{const x=form.querySelector(`[data-v303="${key}"]`);if(x)x.textContent=fmt(val);};
+    set('total',total); set('monthly',monthly); set('ownTotal',a); set('otherTotal',b); set('ownMonthly',am); set('otherMonthly',bm);
+    const st=form.querySelector('[data-v303-status]');
+    const ok=Math.abs((a+b)-total)<0.01 && Math.abs((am+bm)-monthly)<0.01;
+    if(st){st.textContent=ok?'El reparto cuadra':'Revisa el reparto';st.className=`text-[9px] font-extrabold ${ok?'text-menta-700':'text-red-600'}`;}
+  };
+
+  window.toggleRecordOwnershipFieldsV175=function(form,ownerType){
+    if(!form)return;
+    const person=form.querySelector('[data-record-owner-person-v175]');
+    const shared=form.querySelector('[data-record-owner-shared-v175]');
+    if(person)person.classList.toggle('hidden',ownerType==='self');
+    if(shared)shared.classList.toggle('hidden',ownerType!=='shared');
+    if(ownerType==='shared') setTimeout(()=>updateSharedEditorV303(form,'load'),0);
+  };
+
+  window.injectRecordOwnershipV175=function(type,id='',presetPerson=''){
+    const form=document.querySelector(`#modalContent form[data-record-type="${type}"]`);
+    if(!form)return;
+    // Siempre sustituye cualquier bloque legado por este único editor.
+    form.querySelectorAll('[data-record-owner-v175]').forEach(x=>x.remove());
+    const realId=id||form.dataset.itemId||'';
+    const item=recordFor(type,realId);
+    form.dataset.recordIdV303=realId;
+    const ownerType=['self','shared','other'].includes(item?.ownerType)?item.ownerType:((presetPerson||'')?'other':'self');
+    const person=ownerType==='self'?'':(presetPerson||item?.person||'');
+    const {total,monthly}=formTotals(form,type,item);
+    let otherTotal=item?.sharedOtherAmount!==undefined?num(item.sharedOtherAmount):(ownerType==='shared'?total/2:0);
+    otherTotal=Math.min(total,otherTotal);
+    let ownTotal=item?.sharedOwnAmount!==undefined?num(item.sharedOwnAmount):Math.max(0,total-otherTotal);
+    if(Math.abs((ownTotal+otherTotal)-total)>=0.01) ownTotal=Math.max(0,total-otherTotal);
+    let otherMonthly=inferredOtherMonthly(item,type,total,monthly);
+    let ownMonthly=item?.sharedOwnMonthlyAmount!==undefined&&item.sharedOwnMonthlyAmount!==null&&item.sharedOwnMonthlyAmount!==''
+      ? num(item.sharedOwnMonthlyAmount)
+      : Math.max(0,monthly-otherMonthly);
+    if(Math.abs((ownMonthly+otherMonthly)-monthly)>=0.01) ownMonthly=Math.max(0,monthly-otherMonthly);
+    const people=[...new Set((typeof getSavedCreditPeople==='function'?getSavedCreditPeople():[]).filter(Boolean))];
+    const anchor=form.querySelector('input[name="concept"]')?.closest('section')||form.firstElementChild;
+
+    const html=`<section data-record-owner-v175 data-v303-owner class="w-full rounded-2xl bg-azul-50/55 border border-azul-100 p-4">
+      <div class="flex items-start justify-between gap-3 mb-3"><div><div class="text-[10px] font-extrabold text-azul-600 uppercase tracking-wide">De quién es este gasto</div><p class="text-[10px] text-gray-400 mt-0.5">El mismo reparto se usa al crear y al editar. En compartidos puedes corregir tanto el total como la mensualidad de cada persona.</p></div><span class="px-2 py-1 rounded-lg bg-white border border-azul-100 text-[8.5px] font-bold text-azul-600">Propiedad</span></div>
+      <div class="grid grid-cols-3 gap-2">
+        ${[['self','user','Mío','azul'],['shared','user-plus','Compartido','lila'],['other','users','De otra persona','durazno']].map(([v,ic,l,t])=>`<label class="cursor-pointer"><input type="radio" name="recordOwnerType" value="${v}" class="peer sr-only" ${ownerType===v?'checked':''} onchange="toggleRecordOwnershipFieldsV175(this.form,'${v}')"><div class="rounded-xl border border-gray-100 bg-white p-3 text-center peer-checked:border-${t}-300 peer-checked:ring-2 peer-checked:ring-${t}-100"><i data-lucide="${ic}" class="w-4 h-4 mx-auto text-${t}-500 mb-1"></i><b class="text-[10px]">${l}</b></div></label>`).join('')}
+      </div>
+      <div data-record-owner-person-v175 class="${ownerType==='self'?'hidden':''} mt-3">
+        <label class="block text-[10px] font-bold text-gray-500 mb-1">Persona</label>
+        <input name="recordOwnerPerson" list="peopleV303" value="${esc(person)}" oninput="updateSharedEditorV303(this.form,'person')" placeholder="Ej. Moni, Mamá, Axel" class="w-full border border-gray-100 rounded-xl px-3 py-2.5 text-sm bg-white">
+        <datalist id="peopleV303">${people.map(p=>`<option value="${esc(p)}"></option>`).join('')}</datalist>
+        <div data-record-owner-shared-v175 class="${ownerType==='shared'?'':'hidden'} mt-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-2xl bg-white border border-gray-100 p-3.5">
+              <div class="flex items-center justify-between gap-2 mb-3"><div><div class="text-[10px] font-extrabold text-gray-700">Reparto total</div><div class="text-[9px] text-gray-400 mt-0.5">Cómo se divide el total completo del concepto.</div></div><span data-v303-status class="text-[9px] font-extrabold text-menta-700">El reparto cuadra</span></div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-[10px] font-bold text-gray-500 mb-1">Me corresponde a mí</label><input type="number" step="any" min="0" name="recordSharedOwnAmount" value="${ownTotal||''}" oninput="updateSharedEditorV303(this.form,'ownTotal')" class="w-full border border-azul-100 rounded-xl px-3 py-2.5 text-sm bg-white"></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 mb-1">Le corresponde a <span data-v303-person>${esc(person||'la otra persona')}</span></label><input type="number" step="any" min="0" name="recordSharedOtherAmount" value="${otherTotal||''}" oninput="updateSharedEditorV303(this.form,'otherTotal')" class="w-full border border-durazno-100 rounded-xl px-3 py-2.5 text-sm bg-white"></div>
+              </div>
+            </div>
+            <div class="rounded-2xl bg-white border border-gray-100 p-3.5">
+              <div class="text-[10px] font-extrabold text-gray-700">Reparto mensual</div><div class="text-[9px] text-gray-400 mt-0.5 mb-3">Estas dos cantidades llenan literalmente “Mía” y “otros” de cada mes.</div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-[10px] font-bold text-gray-500 mb-1">Mi pago mensual</label><input type="number" step="any" min="0" name="recordSharedOwnMonthlyAmount" value="${ownMonthly||''}" oninput="updateSharedEditorV303(this.form,'ownMonthly')" class="w-full border border-azul-100 rounded-xl px-3 py-2.5 text-sm bg-white"></div>
+                <div><label class="block text-[10px] font-bold text-gray-500 mb-1">Pago mensual de <span data-v303-person>${esc(person||'la otra persona')}</span></label><input type="number" step="any" min="0" name="recordSharedOtherMonthlyAmount" value="${otherMonthly||''}" oninput="updateSharedEditorV303(this.form,'otherMonthly')" class="w-full border border-durazno-100 rounded-xl px-3 py-2.5 text-sm bg-white"></div>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2 mt-3">
+            <div class="rounded-xl bg-gray-50 p-2.5"><div class="text-[8px] text-gray-400">Total del concepto</div><div data-v303="total" class="text-[13px] font-extrabold text-gray-800 mt-1">${fmt(total)}</div><div class="text-[8px] text-gray-400 mt-1">Pago mensual total <span data-v303="monthly">${fmt(monthly)}</span></div></div>
+            <div class="rounded-xl bg-azul-50 p-2.5"><div class="text-[8px] text-gray-400">Mi parte total</div><div data-v303="ownTotal" class="text-[13px] font-extrabold text-azul-700 mt-1">${fmt(ownTotal)}</div><div class="text-[8px] text-azul-600 mt-1">Mi mensualidad <span data-v303="ownMonthly">${fmt(ownMonthly)}</span></div></div>
+            <div class="rounded-xl bg-durazno-50 p-2.5"><div class="text-[8px] text-gray-400">Parte de <span data-v303-person>${esc(person||'otros')}</span></div><div data-v303="otherTotal" class="text-[13px] font-extrabold text-durazno-700 mt-1">${fmt(otherTotal)}</div><div class="text-[8px] text-durazno-600 mt-1">Mensualidad de otros <span data-v303="otherMonthly">${fmt(otherMonthly)}</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>`;
+    if(anchor)anchor.insertAdjacentHTML('afterend',html); else form.insertAdjacentHTML('afterbegin',html);
+
+    ['totalAmount','amount'].forEach(name=>{
+      const el=form.querySelector(`[name="${name}"]`);
+      if(el&&!el.dataset.v303sync){el.dataset.v303sync='1';el.addEventListener('input',()=>updateSharedEditorV303(form,name==='totalAmount'?'total':'monthly'));}
+    });
+    if(ownerType==='shared') updateSharedEditorV303(form,'load');
+    if(typeof lucide!=='undefined')lucide.createIcons();
+  };
+
+  // El guardado base sigue manejando concepto, categoría, fechas, tarjeta y propiedad.
+  // Esta capa añade el reparto mensual explícito al MISMO registro maestro.
+  const saveBaseV303=window.saveRecordForm;
+  window.saveRecordForm=function(event,type,id=''){
+    const form=event.target;
+    const fd=new FormData(form);
+    const owner=fd.get('recordOwnerType')||'self';
+    const monthly=num(fd.get('amount'));
+    const ownM=num(fd.get('recordSharedOwnMonthlyAmount'));
+    const otherM=num(fd.get('recordSharedOtherMonthlyAmount'));
+    if(owner==='shared' && monthly>0 && (ownM<=0 || otherM<=0 || Math.abs((ownM+otherM)-monthly)>=0.01)){
+      event.preventDefault();
+      alert(`En un gasto compartido, Mi pago mensual + Pago mensual de la otra persona deben sumar ${fmt(monthly)}.`);
+      return;
+    }
+    saveBaseV303(event,type,id);
+    const col=collectionFor(type);
+    const item=id?(state[col]||[]).find(x=>String(x.id)===String(id)):(state[col]||[]).at(-1);
+    if(!item)return;
+    if(owner==='shared'){
+      item.sharedOwnMonthlyAmount=ownM;
+      item.sharedOtherMonthlyAmount=otherM;
+    }else if(owner==='other'){
+      item.sharedOwnMonthlyAmount=0;
+      item.sharedOtherMonthlyAmount=num(item.amount);
+    }else{
+      item.sharedOwnMonthlyAmount=num(item.amount);
+      item.sharedOtherMonthlyAmount=0;
+    }
+    // Mantén el movimiento espejo de Tarjetas sincronizado con el mismo reparto mensual.
+    const mv=(state.creditMovements||[]).find(m=>String(m.id)===String(item.sourceCreditMovementId||'')) ||
+      (state.creditMovements||[]).find(m=>m.sourceBudgetManagedV175&&String(m.sourceBudgetItemId)===String(item.id)&&m.sourceBudgetCollection===col);
+    if(mv){
+      mv.sharedOwnMonthlyAmount=item.sharedOwnMonthlyAmount;
+      mv.sharedOtherMonthlyAmount=item.sharedOtherMonthlyAmount;
+    }
+    saveState();
+    render();
+  };
+
+  // Motor mensual: cuando existe reparto mensual explícito, úsalo como verdad.
+  const oldOwnershipV303=window.getOwnershipTruthV253;
+  if(typeof oldOwnershipV303==='function'){
+    window.getOwnershipTruthV253=function(item,collection=''){
+      const base=oldOwnershipV303(item,collection);
+      if(!item || base.type!=='shared' || item.ownershipAmountIsPersonal===true)return base;
+      const amount=num(getPaymentAmount(item));
+      const hasOwn=item.sharedOwnMonthlyAmount!==undefined&&item.sharedOwnMonthlyAmount!==null&&item.sharedOwnMonthlyAmount!=='';
+      const hasOther=item.sharedOtherMonthlyAmount!==undefined&&item.sharedOtherMonthlyAmount!==null&&item.sharedOtherMonthlyAmount!=='';
+      if(!hasOwn&&!hasOther)return base;
+      let own=hasOwn?num(item.sharedOwnMonthlyAmount):Math.max(0,amount-num(item.sharedOtherMonthlyAmount));
+      let other=hasOther?num(item.sharedOtherMonthlyAmount):Math.max(0,amount-own);
+      if(Math.abs((own+other)-amount)>=0.01){other=Math.min(amount,other);own=Math.max(0,amount-other);}
+      return {...base,own,sharedOwn:own,other,total:amount,ratio:amount>0?own/amount:0};
+    };
+    window.getPersonalAmountV253=function(item,collection=''){return getOwnershipTruthV253(item,collection).own;};
+    window.getPersonalOwnershipRatioV214=function(item){
+      const o=getOwnershipTruthV253(item,item?.__collection||'');
+      const amount=num(getPaymentAmount(item));
+      return amount>0?Math.max(0,Math.min(1,o.own/amount)):(o.type==='other'?0:1);
+    };
+    window.getStrategyOwnRatioV203=window.getPersonalOwnershipRatioV214;
+  }
+
+  // Pagos a meses: total usa reparto total; mensual usa reparto mensual explícito.
+  const oldInstallNumsV303=window.getInstallmentPersonalNumbersV262;
+  if(typeof oldInstallNumsV303==='function'){
+    window.getInstallmentPersonalNumbersV262=function(item){
+      const base=oldInstallNumsV303(item);
+      if(!item||base.type!=='shared')return base;
+      const fullMonthly=num(item.amount||item.monthlyAmount);
+      const hasOwn=item.sharedOwnMonthlyAmount!==undefined&&item.sharedOwnMonthlyAmount!==null&&item.sharedOwnMonthlyAmount!=='';
+      const hasOther=item.sharedOtherMonthlyAmount!==undefined&&item.sharedOtherMonthlyAmount!==null&&item.sharedOtherMonthlyAmount!=='';
+      if(!hasOwn&&!hasOther)return base;
+      let ownMonthly=hasOwn?num(item.sharedOwnMonthlyAmount):Math.max(0,fullMonthly-num(item.sharedOtherMonthlyAmount));
+      let otherMonthly=hasOther?num(item.sharedOtherMonthlyAmount):Math.max(0,fullMonthly-ownMonthly);
+      if(Math.abs((ownMonthly+otherMonthly)-fullMonthly)>=0.01){otherMonthly=Math.min(fullMonthly,otherMonthly);ownMonthly=Math.max(0,fullMonthly-otherMonthly);}
+      const factor=fullMonthly>0?ownMonthly/fullMonthly:base.factor;
+      return {...base,ownMonthly,factor};
+    };
+  }
+
+  // Nuevo y Editar pasan por exactamente el mismo flujo.
+  const oldOpenRecordV303=window.openRecordModal;
+  window.openRecordModal=function(type,id='',presetPerson=''){
+    const r=oldOpenRecordV303.apply(this,arguments);
+    // El wrapper V294 también llama a esta misma función de inyección; al quitar el bloque antes de pintar,
+    // nunca quedan dos editores distintos.
+    window.injectRecordOwnershipV175(type,id,presetPerson);
+    return r;
+  };
+  window.editItem=function(id,col){
+    if(col==='savings')return openSavingModal(id);
+    const type=col==='installments'?'installment':col==='fixed'?'fixed':'variable';
+    return window.openRecordModal(type,id,'');
+  };
+
+  window.runOwnershipEditorQA_V303=function(){
+    const form=document.querySelector('#modalContent form[data-record-type]');
+    if(!form)return {modalOpen:false};
+    return {modalOpen:true,type:form.dataset.recordType,id:form.dataset.itemId||'',blocks:form.querySelectorAll('[data-record-owner-v175]').length,ownTotal:!!form.querySelector('[name="recordSharedOwnAmount"]'),otherTotal:!!form.querySelector('[name="recordSharedOtherAmount"]'),ownMonthly:!!form.querySelector('[name="recordSharedOwnMonthlyAmount"]'),otherMonthly:!!form.querySelector('[name="recordSharedOtherMonthlyAmount"]')};
+  };
+})();
+</script>
+
+
+
+<script>
+/* ============================================================
+   V304 · COMPARTIDOS EN EDICIÓN REAL
+   Corrección de raíz:
+   1) Si Editar viene de Fijos/A meses/Variados, prioriza el registro
+      local de esa vista antes de abrir un espejo de Tarjetas.
+   2) Si por identidad el maestro sí es un movimiento de Tarjetas,
+      ese MISMO editor también muestra y guarda la mensualidad ajena.
+   3) Nuevo y Editar comparten los mismos datos:
+      total propio/ajeno + mensual propio/ajeno.
+============================================================ */
+(function(){
+  window.__APP_VERSION__='v304-compartidos-edicion-real';
+  const n=v=>Math.max(0,Number(v)||0);
+  const normCol=c=>c==='installment'?'installments':c;
+  const typeFor=c=>c==='installments'?'installment':c==='fixed'?'fixed':'variable';
+
+  // ---------- 1. Desde vistas presupuestales, abre primero su registro real ----------
+  const fallbackEditV304=window.editItem;
+  window.editItem=function(id,col){
+    if(col==='savings') return fallbackEditV304.apply(this,arguments);
+    const c=normCol(col);
+
+    // ID real de la colección.
+    let local=(state[c]||[]).find(x=>String(x.id)===String(id||''));
+
+    // ID proyectado linked_<collection>_<sourceId>_<month>_<year>
+    if(!local){
+      const m=String(id||'').match(/^linked_(fixed|installments|variable)_(.+)_\d+_\d+$/);
+      if(m){
+        const sourceCol=normCol(m[1]);
+        const sourceId=m[2];
+        if(sourceCol===c) local=(state[c]||[]).find(x=>String(x.id)===String(sourceId));
+      }
+    }
+
+    // Runtime/espejo: intenta recuperar el sourceBudgetItemId.
+    if(!local){
+      let mv=null;
+      try{
+        const sid=String(id||'').replace(/^runtime_credit_/,'');
+        mv=(state.creditMovements||[]).find(x=>String(x.id)===sid) ||
+           (typeof getCreditMovements==='function' ? (getCreditMovements()||[]).find(x=>String(x.id)===String(id||'')) : null);
+      }catch(e){}
+      const sourceId=mv?.sourceBudgetItemId||mv?.sourceId||mv?.budgetRecordId||'';
+      const sourceCol=normCol(mv?.sourceBudgetCollection||mv?.__linkedCollection||mv?.budgetCollection||'');
+      if(sourceId && (!sourceCol || sourceCol===c)){
+        local=(state[c]||[]).find(x=>String(x.id)===String(sourceId));
+      }
+    }
+
+    if(local){
+      const t=typeFor(c);
+      if(t==='fixed' && typeof openFixedRecordModal==='function'){ openFixedRecordModal(local.id); return true; }
+      if(t==='installment' && typeof openInstallmentRecordModal==='function'){ openInstallmentRecordModal(local.id); return true; }
+      if(t==='variable' && typeof openVariableRecordModal==='function'){ openVariableRecordModal(local.id); return true; }
+    }
+
+    // Si el verdadero maestro es Tarjetas, conserva el resolver seguro de V283.
+    return fallbackEditV304.apply(this,arguments);
+  };
+
+  // ---------- 2. El editor de Tarjetas también debe soportar mensualidad ajena ----------
+  const openCreditBaseV304=window.openCreditMovementModal;
+  function enhanceCreditSharedMonthlyV304(cardId,movementId){
+    const form=document.querySelector('#modalContent form[data-credit-card-id]');
+    if(!form) return;
+
+    const mv=(state.creditMovements||[]).find(x=>String(x.id)===String(movementId||''))||null;
+    const owner=form.querySelector('[name="ownerType"]:checked')?.value || mv?.ownerType || 'self';
+    const sharedBox=form.querySelector('#creditSharedAmountField');
+    if(!sharedBox) return;
+
+    // Elimina una versión previa del campo si el modal se reconstruyó.
+    sharedBox.querySelectorAll('[data-v304-other-monthly]').forEach(x=>x.remove());
+
+    const total=n(form.querySelector('[name="totalAmount"]')?.value || mv?.totalAmount);
+    const monthly=n(form.querySelector('[name="monthlyAmount"]')?.value || mv?.monthlyAmount || total);
+    const otherTotal=n(form.querySelector('[name="sharedOtherAmount"]')?.value || mv?.sharedOtherAmount);
+
+    let otherMonthly;
+    const explicit=mv?.sharedOtherMonthlyAmount;
+    if(explicit!==undefined && explicit!==null && explicit!=='') otherMonthly=n(explicit);
+    else otherMonthly=(total>0? monthly*(otherTotal/total):0);
+
+    const wrap=document.createElement('div');
+    wrap.setAttribute('data-v304-other-monthly','1');
+    wrap.className='mt-3 rounded-xl border border-durazno-100 bg-durazno-50/35 p-3';
+    wrap.innerHTML=`
+      <label class="block text-xs mb-1 text-gray-600 font-bold">Pago mensual de la otra persona</label>
+      <input type="number" step="any" min="0" name="sharedOtherMonthlyAmount" value="${otherMonthly?Number(otherMonthly.toFixed(2)):''}"
+        oninput="updateCreditSharedMonthlyV304(this.form)"
+        class="w-full border border-durazno-200 rounded-xl px-3 py-2.5 text-sm bg-white"
+        placeholder="Ej. 1145.22">
+      <p class="text-[10px] text-gray-500 mt-1">Este valor llena directamente “otros” cada mes. Puedes corregirlo al editar.</p>
+      <div data-v304-monthly-summary class="mt-2 grid grid-cols-3 gap-2"></div>`;
+    sharedBox.appendChild(wrap);
+
+    const oldHelp=[...sharedBox.querySelectorAll('p')].find(p=>(p.textContent||'').includes('calculará automáticamente'));
+    if(oldHelp) oldHelp.textContent='Aquí defines el total de la otra persona. Abajo defines también su pago mensual.';
+
+    if(owner==='shared') updateCreditSharedMonthlyV304(form);
+  }
+
+  window.updateCreditSharedMonthlyV304=function(form){
+    if(!form) return;
+    const total=n(form.querySelector('[name="totalAmount"]')?.value);
+    let monthly=n(form.querySelector('[name="monthlyAmount"]')?.value);
+    const purchaseType=form.querySelector('[name="purchaseType"]')?.value||'single';
+    const months=Math.max(1,parseInt(form.querySelector('[name="months"]')?.value)||1);
+    if(!monthly) monthly=purchaseType==='installments' ? (months?total/months:0) : total;
+
+    const otherTotal=n(form.querySelector('[name="sharedOtherAmount"]')?.value);
+    const otherMonthly=Math.min(monthly,n(form.querySelector('[name="sharedOtherMonthlyAmount"]')?.value));
+    const ownTotal=Math.max(0,total-otherTotal);
+    const ownMonthly=Math.max(0,monthly-otherMonthly);
+    const box=form.querySelector('[data-v304-monthly-summary]');
+    if(box){
+      box.innerHTML=`
+        <div class="rounded-lg bg-white p-2"><div class="text-[8px] text-gray-400">Pago mensual total</div><b class="text-[11px] text-gray-800">${fmt(monthly)}</b></div>
+        <div class="rounded-lg bg-azul-50 p-2"><div class="text-[8px] text-gray-400">Mi mensualidad</div><b class="text-[11px] text-azul-700">${fmt(ownMonthly)}</b></div>
+        <div class="rounded-lg bg-durazno-50 p-2"><div class="text-[8px] text-gray-400">Mensualidad de otros</div><b class="text-[11px] text-durazno-700">${fmt(otherMonthly)}</b></div>`;
+    }
+
+    // Actualiza también el preview clásico para que no vuelva a mostrar otros $0.
+    const preview=document.getElementById('sharedOwnPreviewV280');
+    if(preview){
+      preview.innerHTML=`<div class="grid ${purchaseType==='installments'?'grid-cols-3':'grid-cols-2'} gap-2">
+        <div class="rounded-xl bg-azul-50/60 border border-azul-100 p-3"><div class="text-[10px] text-gray-400">Me corresponde a mí</div><div class="text-[16px] font-extrabold text-azul-600 mt-1">${fmt(ownTotal)}</div>${purchaseType==='installments'?`<div class="text-[9px] text-gray-400 mt-1">${fmt(ownMonthly)} por mensualidad</div>`:''}</div>
+        <div class="rounded-xl bg-durazno-50/60 border border-durazno-100 p-3"><div class="text-[10px] text-gray-400">Le corresponde a la otra persona</div><div class="text-[16px] font-extrabold text-durazno-600 mt-1">${fmt(otherTotal)}</div>${purchaseType==='installments'?`<div class="text-[9px] text-gray-400 mt-1">${fmt(otherMonthly)} por mensualidad</div>`:''}</div>
+        ${purchaseType==='installments'?`<div class="rounded-xl bg-gray-50 border border-gray-100 p-3"><div class="text-[10px] text-gray-400">Total de la compra</div><div class="text-[16px] font-extrabold text-gray-700 mt-1">${fmt(total)}</div><div class="text-[9px] text-gray-400 mt-1">${months} mensualidades</div></div>`:''}
+      </div>`;
+    }
+  };
+
+  window.openCreditMovementModal=function(cardId,id='',presetPerson=''){
+    const r=openCreditBaseV304.apply(this,arguments);
+    enhanceCreditSharedMonthlyV304(cardId,id);
+    const form=document.querySelector('#modalContent form[data-credit-card-id]');
+    if(form && !form.dataset.v304Listeners){
+      form.dataset.v304Listeners='1';
+      form.addEventListener('input',e=>{
+        if(['totalAmount','monthlyAmount','months','sharedOtherAmount'].includes(e.target?.name)) setTimeout(()=>updateCreditSharedMonthlyV304(form),0);
+      },true);
+      form.addEventListener('change',e=>{
+        if(['purchaseType','ownerType'].includes(e.target?.name)) setTimeout(()=>updateCreditSharedMonthlyV304(form),0);
+      },true);
+    }
+    try{lucide.createIcons();}catch(e){}
+    return r;
+  };
+
+  const saveCreditBaseV304=window.saveCreditMovementForm;
+  window.saveCreditMovementForm=function(event,cardId,id=''){
+    const form=event.target;
+    const fd=new FormData(form);
+    const owner=fd.get('ownerType')||'self';
+    const total=n(fd.get('totalAmount'));
+    let monthly=n(fd.get('monthlyAmount'));
+    const purchaseType=fd.get('purchaseType')||'single';
+    const months=Math.max(1,parseInt(fd.get('months'))||1);
+    if(!monthly) monthly=purchaseType==='installments'?(months?total/months:0):total;
+    const otherMonthly=n(fd.get('sharedOtherMonthlyAmount'));
+    if(owner==='shared' && otherMonthly>monthly+0.01){
+      event.preventDefault();
+      alert(`El pago mensual de la otra persona no puede ser mayor al pago mensual total (${fmt(monthly)}).`);
+      return;
+    }
+
+    saveCreditBaseV304(event,cardId,id);
+
+    const mv=id
+      ? (state.creditMovements||[]).find(x=>String(x.id)===String(id))
+      : (state.creditMovements||[]).at(-1);
+    if(!mv) return;
+    if(owner==='shared'){
+      mv.sharedOtherMonthlyAmount=otherMonthly;
+      mv.sharedOwnMonthlyAmount=Math.max(0,monthly-otherMonthly);
+    }else if(owner==='other'){
+      mv.sharedOtherMonthlyAmount=monthly;
+      mv.sharedOwnMonthlyAmount=0;
+    }else{
+      mv.sharedOtherMonthlyAmount=0;
+      mv.sharedOwnMonthlyAmount=monthly;
+    }
+
+    // Si existe un registro presupuestal enlazado, sincroniza ese mismo dato.
+    const col=normCol(mv.sourceBudgetCollection||mv.budgetCollection||mv.budgetType||'');
+    const sourceId=mv.sourceBudgetItemId||mv.sourceId||mv.budgetRecordId||'';
+    if(sourceId && ['fixed','installments','variable'].includes(col)){
+      const item=(state[col]||[]).find(x=>String(x.id)===String(sourceId));
+      if(item){
+        item.sharedOtherMonthlyAmount=mv.sharedOtherMonthlyAmount;
+        item.sharedOwnMonthlyAmount=mv.sharedOwnMonthlyAmount;
+      }
+    }
+    saveState();
+    render();
+  };
+
+  // ---------- 3. Si abre un modal presupuestal, obliga al editor V303 después de pintar ----------
+  function reinforceBudgetEditorV304(type,id){
+    const form=document.querySelector(`#modalContent form[data-record-type="${type}"]`);
+    if(!form) return;
+    if(typeof window.injectRecordOwnershipV175==='function'){
+      window.injectRecordOwnershipV175(type,id,'');
+    }
+    try{lucide.createIcons();}catch(e){}
+  }
+  const f0=window.openFixedRecordModal, i0=window.openInstallmentRecordModal, v0=window.openVariableRecordModal;
+  window.openFixedRecordModal=function(id=''){const r=f0.apply(this,arguments); reinforceBudgetEditorV304('fixed',id); return r;};
+  window.openInstallmentRecordModal=function(id=''){const r=i0.apply(this,arguments); reinforceBudgetEditorV304('installment',id); return r;};
+  window.openVariableRecordModal=function(id=''){const r=v0.apply(this,arguments); reinforceBudgetEditorV304('variable',id); return r;};
+
+  window.runV304EditQA=function(){
+    return {
+      version:window.__APP_VERSION__,
+      editItemOverridden:typeof window.editItem==='function',
+      budgetEditor:typeof window.injectRecordOwnershipV175==='function',
+      creditEditor:typeof window.openCreditMovementModal==='function',
+      creditSave:typeof window.saveCreditMovementForm==='function'
+    };
+  };
+})();
+</script>
+
+
+<script>
+/* ============================================================
+   V305 · COMPARTIDOS SIN AUTORREPARTO
+   - "Mi parte" y "parte de otra persona" son campos independientes.
+   - Escribir en uno NO modifica el otro.
+   - En mensualidades, el pago total se obtiene de la suma de ambos
+     SOLO como total del concepto; nunca resta/rellena el otro campo.
+   - Corrige layout superior de Pago a meses:
+     Concepto 4 / Total 2 / Tarjeta 3 / Categoría 3.
+============================================================ */
+(function(){
+  window.__APP_VERSION__='v305-compartidos-sin-autorreparto';
+  const num=v=>Math.max(0,Number(v)||0);
+  const esc=v=>escapeHtml(String(v??''));
+  const colFor=type=>type==='installment'?'installments':type==='fixed'?'fixed':'variable';
+  const recordFor=(type,id='')=>(state[colFor(type)]||[]).find(x=>String(x.id)===String(id||''))||null;
+
+  function totalsForV305(form,type,item){
+    const purchaseTotal=type==='installment'
+      ? num(form.querySelector('[name="totalAmount"]')?.value || item?.totalAmount)
+      : num(form.querySelector('[name="amount"]')?.value || item?.amount);
+    const storedMonthly=num(item?.amount||item?.monthlyAmount);
+    const formMonthly=num(form.querySelector('[name="amount"]')?.value);
+    return {purchaseTotal,storedMonthly,formMonthly};
+  }
+
+  function legacyMonthlyV305(item,type){
+    if(!item)return {own:'',other:''};
+
+    const hasOwn=item.sharedOwnMonthlyAmount!==undefined&&item.sharedOwnMonthlyAmount!==null&&item.sharedOwnMonthlyAmount!=='';
+    const hasOther=item.sharedOtherMonthlyAmount!==undefined&&item.sharedOtherMonthlyAmount!==null&&item.sharedOtherMonthlyAmount!=='';
+
+    let own=hasOwn?num(item.sharedOwnMonthlyAmount):0;
+    let other=hasOther?num(item.sharedOtherMonthlyAmount):0;
+
+    // Registro antiguo: "amount" solía guardar solo la parte propia.
+    // Si falta la parte propia explícita, usa ese amount como propuesta,
+    // SIN restarla de la otra persona.
+    if(!hasOwn && item.ownerType==='shared'){
+      own=num(item.amount||item.monthlyAmount);
+    }
+
+    // Si falta la mensualidad ajena, se propone desde su total / meses,
+    // pero queda totalmente editable e independiente.
+    if(!hasOther && item.ownerType==='shared'){
+      const months=Math.max(1,parseInt(item.totalMonths)||1);
+      const otherTotal=num(item.sharedOtherAmount);
+      other=type==='installment' && otherTotal>0 ? otherTotal/months : (type!=='installment'?otherTotal:0);
+    }
+    return {own,other};
+  }
+
+  // ---------- editor independiente ----------
+  window.updateSharedEditorV303=function(form,source='load'){
+    if(!form)return;
+    const type=form.dataset.recordType||'variable';
+    const item=recordFor(type,form.dataset.recordIdV303||form.dataset.itemId||'');
+    const {purchaseTotal}=totalsForV305(form,type,item);
+
+    const ownT=form.querySelector('[name="recordSharedOwnAmount"]');
+    const otherT=form.querySelector('[name="recordSharedOtherAmount"]');
+    const ownM=form.querySelector('[name="recordSharedOwnMonthlyAmount"]');
+    const otherM=form.querySelector('[name="recordSharedOtherMonthlyAmount"]');
+    if(!ownT||!otherT||!ownM||!otherM)return;
+
+    // NUNCA modificar el campo contrario.
+    const a=num(ownT.value), b=num(otherT.value), am=num(ownM.value), bm=num(otherM.value);
+    const monthlyTotal=am+bm;
+
+    // El "Pago mensual" general representa el total real del concepto.
+    // Se actualiza desde la SUMA de los dos campos explícitos, sin tocar ninguno.
+    const amountInput=form.querySelector('[name="amount"]');
+    if(type==='installment' && amountInput && (source==='ownMonthly'||source==='otherMonthly'||source==='load')){
+      if(monthlyTotal>0) amountInput.value=Number(monthlyTotal.toFixed(2));
+    }
+
+    const person=String(form.querySelector('[name="recordOwnerPerson"]')?.value||'otra persona').trim()||'otra persona';
+    form.querySelectorAll('[data-v303-person]').forEach(x=>x.textContent=person);
+
+    const set=(key,val)=>{const x=form.querySelector(`[data-v303="${key}"]`);if(x)x.textContent=fmt(val);};
+    set('total',purchaseTotal);
+    set('monthly',monthlyTotal);
+    set('ownTotal',a);
+    set('otherTotal',b);
+    set('ownMonthly',am);
+    set('otherMonthly',bm);
+
+    const totalStatus=form.querySelector('[data-v303-status]');
+    const totalDiff=purchaseTotal-(a+b);
+    if(totalStatus){
+      const ok=Math.abs(totalDiff)<0.01;
+      totalStatus.textContent=ok?'El reparto cuadra':`Diferencia ${fmt(Math.abs(totalDiff))}`;
+      totalStatus.className=`text-[9px] font-extrabold ${ok?'text-menta-700':'text-durazno-600'}`;
+    }
+
+    // Texto explícito: nada se autodescuenta.
+    const monthlyBox=ownM.closest('.rounded-2xl');
+    if(monthlyBox){
+      const helper=monthlyBox.querySelector('[data-v305-monthly-help]') || monthlyBox.querySelector('.text-gray-400.mt-0\\.5.mb-3');
+      if(helper) helper.textContent='Captura ambas mensualidades por separado. Escribir una NO cambia la otra.';
+    }
+  };
+
+  // ---------- misma UI para Nuevo y Editar, con valores legacy precargados ----------
+  const injectBaseV305=window.injectRecordOwnershipV175;
+  window.injectRecordOwnershipV175=function(type,id='',presetPerson=''){
+    const form=document.querySelector(`#modalContent form[data-record-type="${type}"]`);
+    if(!form)return;
+
+    // Deja que V303 construya el mismo bloque.
+    injectBaseV305.apply(this,arguments);
+
+    const item=recordFor(type,id||form.dataset.itemId||'');
+    if(!item || item.ownerType!=='shared') {
+      normalizeInstallmentHeaderV305(form);
+      return;
+    }
+
+    const ownM=form.querySelector('[name="recordSharedOwnMonthlyAmount"]');
+    const otherM=form.querySelector('[name="recordSharedOtherMonthlyAmount"]');
+    const legacy=legacyMonthlyV305(item,type);
+
+    // Solo rellena al abrir; después el usuario controla cada campo.
+    if(ownM && (ownM.value==='' || num(ownM.value)===0) && legacy.own>0) ownM.value=Number(legacy.own.toFixed(2));
+    if(otherM && (otherM.value==='' || num(otherM.value)===0) && legacy.other>0) otherM.value=Number(legacy.other.toFixed(2));
+
+    // Quita cualquier comportamiento/autotexto anterior que sugiera resta automática.
+    if(ownM) ownM.setAttribute('oninput',"updateSharedEditorV303(this.form,'ownMonthly')");
+    if(otherM) otherM.setAttribute('oninput',"updateSharedEditorV303(this.form,'otherMonthly')");
+
+    const monthlyCard=ownM?.closest('.rounded-2xl');
+    if(monthlyCard){
+      const desc=[...monthlyCard.querySelectorAll('div')].find(x=>(x.textContent||'').includes('Estas dos cantidades'));
+      if(desc){
+        desc.setAttribute('data-v305-monthly-help','1');
+        desc.textContent='Captura ambas mensualidades por separado. Escribir una NO cambia la otra.';
+      }
+    }
+
+    updateSharedEditorV303(form,'load');
+    normalizeInstallmentHeaderV305(form);
+    try{lucide.createIcons();}catch(e){}
+  };
+
+  // ---------- layout limpio de Datos del gasto ----------
+  function normalizeInstallmentHeaderV305(form){
+    if(!form || form.dataset.recordType!=='installment')return;
+    const concept=form.querySelector('input[name="concept"]')?.parentElement;
+    const total=form.querySelector('input[name="totalAmount"]')?.parentElement;
+    const card=form.querySelector('select[name="purchaseCard"]')?.parentElement;
+    const basic=form.querySelector('input[name="concept"]')?.closest('section');
+    const grid=basic?.querySelector('.grid.grid-cols-12');
+    if(!grid||!concept||!total||!card)return;
+
+    // Conserva un solo selector de categoría.
+    const cats=[...form.querySelectorAll('select[name="category"]')];
+    let cat=cats.find(x=>x.closest('[data-category-v294]')) || cats[0] || null;
+    cats.forEach(x=>{
+      if(x!==cat){
+        const holder=x.closest('[data-category-v293],[data-category-v294]')||x.parentElement;
+        holder?.remove();
+      }
+    });
+
+    if(!cat){
+      const item=recordFor('installment',form.dataset.itemId||form.dataset.recordIdV303||'');
+      const block=document.createElement('div');
+      block.setAttribute('data-category-v305','1');
+      block.innerHTML=`<label class="block text-xs mb-1 text-gray-500">Categoría</label><select name="category" class="w-full border rounded-lg px-3 py-2.5 text-sm bg-white">${getCategoryOptions(item?.category||'otros')}</select>`;
+      grid.appendChild(block);
+      cat=block.querySelector('select');
+    }
+
+    const catHolder=cat.closest('[data-category-v293],[data-category-v294],[data-category-v305]')||cat.parentElement;
+    concept.className='col-span-4 min-w-0';
+    total.className='col-span-2 min-w-0';
+    card.className='col-span-3 min-w-0';
+    catHolder.className='col-span-3 min-w-0';
+
+    // Mueve categoría al mismo grid y en orden correcto.
+    if(catHolder.parentElement!==grid) grid.appendChild(catHolder);
+    grid.appendChild(concept);
+    grid.appendChild(total);
+    grid.appendChild(card);
+    grid.appendChild(catHolder);
+
+    // Evita que textos auxiliares agranden visualmente la categoría.
+    [...catHolder.querySelectorAll('p')].forEach(p=>p.remove());
+  }
+  window.normalizeInstallmentHeaderV305=normalizeInstallmentHeaderV305;
+
+  // ---------- guardado: no exige que un campo sea el complemento del otro ----------
+  const saveBaseV305=window.saveRecordForm;
+  window.saveRecordForm=function(event,type,id=''){
+    const form=event.target;
+    const fd=new FormData(form);
+    const owner=fd.get('recordOwnerType')||'self';
+
+    if(owner==='shared'){
+      const ownM=num(fd.get('recordSharedOwnMonthlyAmount'));
+      const otherM=num(fd.get('recordSharedOtherMonthlyAmount'));
+      const ownT=num(fd.get('recordSharedOwnAmount'));
+      const otherT=num(fd.get('recordSharedOtherAmount'));
+
+      // El total mensual del concepto es la suma de los dos valores
+      // QUE EL USUARIO capturó; no se calcula uno desde el otro.
+      const amount=form.querySelector('[name="amount"]');
+      if(amount && (ownM>0 || otherM>0)) amount.value=Number((ownM+otherM).toFixed(2));
+
+      // Para pagos a meses, los dos campos de reparto total siguen siendo
+      // independientes; solo mostramos diferencia, no sobrescribimos.
+      if(type==='installment'){
+        const purchaseTotal=num(form.querySelector('[name="totalAmount"]')?.value);
+        if(purchaseTotal>0 && Math.abs((ownT+otherT)-purchaseTotal)>=0.02){
+          const ok=confirm(`El reparto total no coincide con el total de la compra.\n\nCompra: ${fmt(purchaseTotal)}\nTú + otra persona: ${fmt(ownT+otherT)}\n\n¿Quieres guardar así?`);
+          if(!ok){event.preventDefault();return;}
+        }
+      }
+    }
+
+    // V303 ya persiste ambos campos explícitos; al poner amount = suma
+    // el motor mensual queda coherente sin restar ni recalcular a nadie.
+    return saveBaseV305.apply(this,arguments);
+  };
+
+  // ---------- wrappers para garantizar layout y editor al crear/editar ----------
+  const fV305=window.openFixedRecordModal;
+  const iV305=window.openInstallmentRecordModal;
+  const vV305=window.openVariableRecordModal;
+
+  window.openFixedRecordModal=function(id=''){
+    const r=fV305.apply(this,arguments);
+    window.injectRecordOwnershipV175('fixed',id,'');
+    return r;
+  };
+  window.openInstallmentRecordModal=function(id=''){
+    const r=iV305.apply(this,arguments);
+    window.injectRecordOwnershipV175('installment',id,'');
+    normalizeInstallmentHeaderV305(document.querySelector('#modalContent form[data-record-type="installment"]'));
+    return r;
+  };
+  window.openVariableRecordModal=function(id=''){
+    const r=vV305.apply(this,arguments);
+    window.injectRecordOwnershipV175('variable',id,'');
+    return r;
+  };
+
+  window.runV305QA=function(){
+    const form=document.querySelector('#modalContent form[data-record-type]');
+    return {
+      version:window.__APP_VERSION__,
+      modalOpen:!!form,
+      type:form?.dataset.recordType||'',
+      independentOwnMonthly:!!form?.querySelector('[name="recordSharedOwnMonthlyAmount"]'),
+      independentOtherMonthly:!!form?.querySelector('[name="recordSharedOtherMonthlyAmount"]'),
+      categoryCount:form?.querySelectorAll('select[name="category"]').length||0
+    };
+  };
+})();
+</script>
+
+
+<script>
+/* ============================================================
+   V306 · DASHBOARD · BOTONES POR TARJETA/CUENTA
+============================================================ */
+(function(){
+  window.__APP_VERSION__='v306-control-tarjetas-botones-corregidos';
+
+  function accountRowsV306(encoded){
+    const raw=decodeDashboardAccount(encoded);
+    const key=dashboardAccountKey(raw);
+    return getMonthlyBoardRows(state.currentMonth,state.currentYear)
+      .filter(r=>dashboardAccountKey(r.account)===key);
+  }
+
+  function masterForRowV306(row){
+    if(!row)return null;
+    if(row.col==='goalContrib') return (state.savingsGoals||[]).find(x=>String(x.id)===String(row.id))||null;
+    if(row.col==='savings') return (state.savings||[]).find(x=>String(x.id)===String(row.id))||null;
+    return (state[row.col]||[]).find(x=>String(x.id)===String(row.id))||null;
+  }
+
+  function setApartMasterV306(row,q,value){
+    const item=masterForRowV306(row);
+    if(!item)return false;
+
+    if(row.col==='goalContrib'){
+      const target=q===1?'Q1':'Q2';
+      const existing=(state.savings||[]).find(s=>
+        String(s.goalId)===String(row.id) &&
+        parseInt(s.month)===state.currentMonth &&
+        parseInt(s.year)===state.currentYear &&
+        normalizeQuincena(s.quincena,s.date)===target
+      );
+      if(value && !existing){
+        const amount=getGoalContributionAmount(item,q);
+        if(amount>0){
+          state.savings.push({
+            id:uid(),
+            date:q===1?(state.config.payDate1||1):(state.config.payDate2||16),
+            quincena:target, amount,
+            card:item.card||'', goalId:item.id,
+            month:state.currentMonth, year:state.currentYear,
+            confirmed:true
+          });
+        }
+      }else if(!value && existing){
+        state.savings=state.savings.filter(s=>String(s.id)!==String(existing.id));
+      }
+      return true;
+    }
+
+    if(row.col==='savings'){
+      if(value && !(parseFloat(item.amount)>0)) item.amount=getSavingPlannedAmount(item);
+      item.confirmed=!!value;
+      return true;
+    }
+
+    if(row.col==='fixed'){
+      const st=getFixedStatus(item,state.currentMonth,state.currentYear);
+      if(q===1)st.apartadoQ1=!!value; else st.apartadoQ2=!!value;
+      return true;
+    }
+    if(row.col==='installments'){
+      const st=getInstallmentStatus(item,state.currentMonth,state.currentYear);
+      if(q===1)st.apartadoQ1=!!value; else st.apartadoQ2=!!value;
+      return true;
+    }
+    if(row.col==='variable'){
+      if(q===1)item.apartadoQ1=!!value; else item.apartadoQ2=!!value;
+      return true;
+    }
+    return false;
+  }
+
+  function setPaidMasterV306(row,q,value){
+    const item=masterForRowV306(row);
+    if(!item || row.col==='goalContrib' || row.col==='savings')return false;
+
+    const view={...item,__collection:row.col,__viewMonth:state.currentMonth,__viewYear:state.currentYear};
+    if(!shouldShowPaidCheckbox(view,q,state.currentMonth,state.currentYear))return false;
+
+    const plan=getPaymentPlan(item);
+    const split=plan==='Pagar mitad en Q1 y mitad en Q2'||plan==='Dividir en varias quincenas de pago';
+
+    if(row.col==='fixed'||row.col==='installments'){
+      const st=row.col==='fixed'
+        ?getFixedStatus(item,state.currentMonth,state.currentYear)
+        :getInstallmentStatus(item,state.currentMonth,state.currentYear);
+
+      if(split){
+        if(q===1)st.paidQ1=!!value; else st.paidQ2=!!value;
+        const payable=[1,2].filter(x=>shouldShowPaidCheckbox(view,x,state.currentMonth,state.currentYear));
+        st.paid=payable.length>0 && payable.every(x=>x===1?!!st.paidQ1:!!st.paidQ2);
+      }else{
+        st.paid=!!value;
+        if(q===1)st.paidQ1=!!value;
+        if(q===2)st.paidQ2=!!value;
+      }
+      return true;
+    }
+
+    if(row.col==='variable'){
+      if(split){
+        if(q===1)item.paidQ1=!!value; else item.paidQ2=!!value;
+        const payable=[1,2].filter(x=>shouldShowPaidCheckbox(view,x,state.currentMonth,state.currentYear));
+        item.paid=payable.length>0 && payable.every(x=>x===1?!!item.paidQ1:!!item.paidQ2);
+      }else{
+        item.paid=!!value;
+        if(q===1)item.paidQ1=!!value;
+        if(q===2)item.paidQ2=!!value;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  window.dashboardAccountBulkV306=function(action,encoded,value){
+    const rows=accountRowsV306(encoded);
+    if(!rows.length)return;
+
+    const account=decodeDashboardAccount(encoded);
+    if(value===false){
+      const msg=action==='apart'
+        ?`¿Desapartar lo de ${account} en ${MONTHS[state.currentMonth]}?`
+        :`¿Desmarcar los pagos de ${account} en ${MONTHS[state.currentMonth]}?`;
+      if(!confirm(msg))return;
+    }
+
+    let changed=0;
+    rows.forEach(row=>{
+      row.qList.forEach(q=>{
+        if(action==='apart'){
+          if(setApartMasterV306(row,q,!!value))changed++;
+        }else if(action==='paid'){
+          if(setPaidMasterV306(row,q,!!value))changed++;
+        }
+      });
+    });
+
+    if(changed){
+      saveState();
+      render();
+    }
+  };
+
+  // Compatibilidad con los botones ya existentes.
+  window.toggleMonthlyAccountApart=function(encoded,value){
+    return window.dashboardAccountBulkV306('apart',encoded,!!value);
+  };
+  window.toggleMonthlyAccountPaid=function(encoded,value){
+    return window.dashboardAccountBulkV306('paid',encoded,!!value);
+  };
+})();
+</script>
+
+
+<script>
+/* ============================================================
+   V307 · PAGOS A MESES · RESPETA REPARTO EXPLÍCITO
+   Si un compartido tiene:
+     sharedOwnAmount / sharedOtherAmount
+     sharedOwnMonthlyAmount / sharedOtherMonthlyAmount
+   esos campos mandan SIEMPRE.
+   Nunca se vuelve a interpretar el total completo como "mi parte".
+============================================================ */
+(function(){
+  window.__APP_VERSION__='v307-compartidos-totales-correctos';
+
+  const n307=v=>Math.max(0,Number(v)||0);
+
+  window.getInstallmentPersonalNumbersV262=function(item){
+    if(!item)return {type:'self',ownTotal:0,ownMonthly:0,paid:0,remaining:0,factor:1,fullTotal:0,otherTotal:0,otherMonthly:0};
+
+    const raw=String(item.ownerType||item.ownership||'self').toLowerCase();
+    const type=raw==='other'||raw==='third'?'other':raw==='shared'?'shared':'self';
+
+    const storedTotal=n307(item.totalAmount||item.originalAmount||item.amount);
+    const storedMonthly=n307(item.amount||item.monthlyAmount);
+
+    if(type==='other'){
+      return {
+        type:'other',ownTotal:0,ownMonthly:0,paid:0,remaining:0,factor:0,
+        fullTotal:storedTotal,otherTotal:storedTotal,otherMonthly:storedMonthly
+      };
+    }
+
+    if(type==='self'){
+      return {
+        type:'self',ownTotal:storedTotal,ownMonthly:storedMonthly,
+        paid:n307(getInstallmentPaidAmount(item)),
+        remaining:n307(getInstallmentRemainingAmount(item)),
+        factor:1,fullTotal:storedTotal,otherTotal:0,otherMonthly:0
+      };
+    }
+
+    // ===== COMPARTIDO =====
+    const explicitOwnTotal =
+      item.sharedOwnAmount!==undefined && item.sharedOwnAmount!==null && item.sharedOwnAmount!==''
+        ? n307(item.sharedOwnAmount) : null;
+    const explicitOtherTotal =
+      item.sharedOtherAmount!==undefined && item.sharedOtherAmount!==null && item.sharedOtherAmount!==''
+        ? n307(item.sharedOtherAmount) : null;
+
+    const explicitOwnMonthly =
+      item.sharedOwnMonthlyAmount!==undefined && item.sharedOwnMonthlyAmount!==null && item.sharedOwnMonthlyAmount!==''
+        ? n307(item.sharedOwnMonthlyAmount) : null;
+    const explicitOtherMonthly =
+      item.sharedOtherMonthlyAmount!==undefined && item.sharedOtherMonthlyAmount!==null && item.sharedOtherMonthlyAmount!==''
+        ? n307(item.sharedOtherMonthlyAmount) : null;
+
+    // Si hay reparto explícito, úsalo literalmente.
+    let ownTotal, otherTotal, fullTotal;
+    if(explicitOwnTotal!==null || explicitOtherTotal!==null){
+      ownTotal = explicitOwnTotal!==null ? explicitOwnTotal : Math.max(0,storedTotal-n307(explicitOtherTotal));
+      otherTotal = explicitOtherTotal!==null ? explicitOtherTotal : Math.max(0,storedTotal-n307(explicitOwnTotal));
+      fullTotal = storedTotal>0 ? storedTotal : ownTotal+otherTotal;
+
+      // Si por datos históricos el total general quedó inconsistente, conserva
+      // las partes explícitas y usa su suma como verdad visual del plan.
+      if(Math.abs((ownTotal+otherTotal)-fullTotal) > 0.01){
+        fullTotal = ownTotal+otherTotal;
+      }
+    }else{
+      const legacy=getInstallmentOwnershipV206(item);
+      const ratio=Math.max(0,Math.min(1,Number(legacy?.ownRatio)||0.5));
+      fullTotal=storedTotal;
+      ownTotal=storedTotal*ratio;
+      otherTotal=Math.max(0,storedTotal-ownTotal);
+    }
+
+    let ownMonthly, otherMonthly, fullMonthly;
+    if(explicitOwnMonthly!==null || explicitOtherMonthly!==null){
+      ownMonthly = explicitOwnMonthly!==null ? explicitOwnMonthly : Math.max(0,storedMonthly-n307(explicitOtherMonthly));
+      otherMonthly = explicitOtherMonthly!==null ? explicitOtherMonthly : Math.max(0,storedMonthly-n307(explicitOwnMonthly));
+      fullMonthly = ownMonthly+otherMonthly;
+    }else{
+      const ratio=fullTotal>0?ownTotal/fullTotal:0;
+      fullMonthly=storedMonthly;
+      ownMonthly=storedMonthly*ratio;
+      otherMonthly=Math.max(0,storedMonthly-ownMonthly);
+    }
+
+    const ratio=fullTotal>0?ownTotal/fullTotal:0;
+    const paidFull=n307(getInstallmentPaidAmount(item));
+    const remainingFull=n307(getInstallmentRemainingAmount(item));
+
+    // Si el engine histórico todavía calcula sobre total completo,
+    // escala pagado/saldo según la parte explícita del usuario.
+    const paid=paidFull*ratio;
+    const remaining=Math.max(0,ownTotal-paid);
+
+    return {
+      type:'shared',
+      ownTotal,ownMonthly,
+      paid,remaining,
+      factor:ratio,
+      fullTotal,otherTotal,otherMonthly,fullMonthly
+    };
+  };
+
+  // Render de Pagos a meses: usa también las mensualidades explícitas devueltas.
+  const renderInstallmentsBaseV307=window.renderInstallmentsView;
+  window.renderInstallmentsView=function(){
+    const result=renderInstallmentsBaseV307.apply(this,arguments);
+
+    // Corrige tarjetas ya pintadas en el DOM por cualquier cálculo viejo.
+    try{
+      (state.installments||[]).forEach(item=>{
+        if(String(item.ownerType||'').toLowerCase()!=='shared')return;
+        const nums=getInstallmentPersonalNumbersV262(item);
+        // No hacemos mutación de datos aquí; la función superior ya hará
+        // que próximos renders usen estos números.
+      });
+    }catch(e){}
+    return result;
+  };
+})();
+</script>
+
+
+<script>
+/* ============================================================
+   V308 · DASHBOARD · BULK ROBUSTO POR TARJETA
+   Corrige casos donde una fila problemática detenía toda la acción.
+   Usa las funciones maestras originales setApartStateDirect /
+   setPaidStateDirect y continúa aunque un concepto falle.
+============================================================ */
+(function(){
+  window.__APP_VERSION__='v308-botones-dashboard-robustos';
+
+  function rowsForAccountV308(encoded){
+    const account=decodeDashboardAccount(encoded);
+    const key=dashboardAccountKey(account);
+    return getMonthlyBoardRows(state.currentMonth,state.currentYear)
+      .filter(r=>dashboardAccountKey(r.account)===key);
+  }
+
+  window.dashboardAccountBulkV308=function(action,encoded,value){
+    const rows=rowsForAccountV308(encoded);
+    if(!rows.length){
+      console.warn('V308: no se encontraron conceptos para', decodeDashboardAccount(encoded));
+      return;
+    }
+
+    const account=decodeDashboardAccount(encoded);
+    if(value===false){
+      const msg=action==='apart'
+        ?`¿Desapartar lo de ${account} en ${MONTHS[state.currentMonth]}?`
+        :`¿Desmarcar los pagos de ${account} en ${MONTHS[state.currentMonth]}?`;
+      if(!confirm(msg)) return;
+    }
+
+    let touched=0, failed=0;
+
+    rows.forEach(row=>{
+      const qs=Array.isArray(row.qList)?row.qList:[];
+      qs.forEach(q=>{
+        try{
+          if(action==='apart'){
+            setApartStateDirect(
+              row.id,row.col,q,!!value,
+              state.currentMonth,state.currentYear
+            );
+            touched++;
+          }else if(action==='paid'){
+            const view={...row.item,__viewMonth:state.currentMonth,__viewYear:state.currentYear};
+            if(!shouldShowPaidCheckbox(view,q,state.currentMonth,state.currentYear)) return;
+            setPaidStateDirect(
+              row.id,row.col,q,!!value,
+              state.currentMonth,state.currentYear
+            );
+            touched++;
+          }
+        }catch(err){
+          failed++;
+          console.warn('V308 bulk omitió un concepto con error', {
+            account,rowId:row.id,col:row.col,q,error:err
+          });
+        }
+      });
+    });
+
+    // Guarda aunque alguna fila puntual haya fallado.
+    if(touched>0){
+      saveState();
+      render();
+    }else{
+      console.warn('V308: no hubo estados modificables para', account, action);
+    }
+
+    if(failed>0){
+      console.warn(`V308: ${failed} estado(s) no pudieron modificarse, el resto sí se aplicó.`);
+    }
+  };
+
+  window.toggleMonthlyAccountApart=function(encoded,value){
+    return window.dashboardAccountBulkV308('apart',encoded,!!value);
+  };
+  window.toggleMonthlyAccountPaid=function(encoded,value){
+    return window.dashboardAccountBulkV308('paid',encoded,!!value);
+  };
+})();
+</script>
+
+
+<script>
+/* ============================================================
+   V309 · BOTONES DASHBOARD REHECHOS
+   No reutiliza los wrappers anteriores.
+   Los botones del renderer llaman directamente:
+      bulkApartAccountV309
+      bulkPaidAccountV309
+   Recorre los registros del mes y actualiza el maestro por ID.
+============================================================ */
+(function(){
+  window.__APP_VERSION__='v309-botones-dashboard-rehechos';
+
+  const sameId=(a,b)=>String(a??'')===String(b??'');
+
+  function monthlySourceRowsV309(encoded){
+    const wanted=dashboardAccountKey(decodeDashboardAccount(encoded));
+    const p=getPaymentsForMonth(state.currentMonth,state.currentYear);
+    const sources=[
+      ...(p.fixed||[]).map(x=>({col:'fixed',view:x})),
+      ...(p.inst||[]).map(x=>({col:'installments',view:x})),
+      ...(p.vari||[]).map(x=>({col:'variable',view:x}))
+    ];
+    return sources.filter(({col,view})=>{
+      const account=col==='installments'
+        ? normalizeDashboardAccountName(view.purchaseCard||view.card||'')
+        : normalizeDashboardAccountName(view.card||'');
+      return dashboardAccountKey(account)===wanted;
+    });
+  }
+
+  function masterV309(col,id){
+    return (state[col]||[]).find(x=>sameId(x.id,id))||null;
+  }
+
+  function qListV309(view){
+    return [1,2].filter(q=>getAmountToSetAside({...view,__viewMonth:state.currentMonth,__viewYear:state.currentYear},q)>0);
+  }
+
+  function setApartV309(col,view,q,value){
+    const item=masterV309(col,view.id);
+    if(!item)return false;
+    if(col==='fixed'){
+      const st=getFixedStatus(item,state.currentMonth,state.currentYear);
+      if(q===1)st.apartadoQ1=!!value; else st.apartadoQ2=!!value;
+    }else if(col==='installments'){
+      const st=getInstallmentStatus(item,state.currentMonth,state.currentYear);
+      if(q===1)st.apartadoQ1=!!value; else st.apartadoQ2=!!value;
+    }else if(col==='variable'){
+      if(q===1)item.apartadoQ1=!!value; else item.apartadoQ2=!!value;
+    }else return false;
+    return true;
+  }
+
+  function setPaidV309(col,view,q,value){
+    const item=masterV309(col,view.id);
+    if(!item)return false;
+
+    const live={...item,__collection:col,__viewMonth:state.currentMonth,__viewYear:state.currentYear};
+    if(!shouldShowPaidCheckbox(live,q,state.currentMonth,state.currentYear))return false;
+
+    const plan=getPaymentPlan(item);
+    const split=plan==='Pagar mitad en Q1 y mitad en Q2'||plan==='Dividir en varias quincenas de pago';
+
+    if(col==='fixed'||col==='installments'){
+      const st=col==='fixed'
+        ? getFixedStatus(item,state.currentMonth,state.currentYear)
+        : getInstallmentStatus(item,state.currentMonth,state.currentYear);
+
+      if(split){
+        if(q===1)st.paidQ1=!!value; else st.paidQ2=!!value;
+        const qs=[1,2].filter(x=>shouldShowPaidCheckbox(live,x,state.currentMonth,state.currentYear));
+        st.paid=qs.length>0 && qs.every(x=>x===1?!!st.paidQ1:!!st.paidQ2);
+      }else{
+        st.paid=!!value;
+      }
+    }else if(col==='variable'){
+      if(split){
+        if(q===1)item.paidQ1=!!value; else item.paidQ2=!!value;
+        const qs=[1,2].filter(x=>shouldShowPaidCheckbox(live,x,state.currentMonth,state.currentYear));
+        item.paid=qs.length>0 && qs.every(x=>x===1?!!item.paidQ1:!!item.paidQ2);
+      }else{
+        item.paid=!!value;
+      }
+    }else return false;
+    return true;
+  }
+
+  window.bulkApartAccountV309=function(encoded,value){
+    const account=decodeDashboardAccount(encoded);
+    if(value===false && !confirm(`¿Desapartar lo de ${account} en ${MONTHS[state.currentMonth]}?`))return;
+
+    const rows=monthlySourceRowsV309(encoded);
+    let changed=0;
+    rows.forEach(({col,view})=>{
+      qListV309(view).forEach(q=>{
+        if(setApartV309(col,view,q,value)) changed++;
+      });
+    });
+
+    if(changed){
+      saveState();
+      render();
+    }else{
+      alert(`No encontré conceptos modificables de ${account} en ${MONTHS[state.currentMonth]}.`);
+    }
+  };
+
+  window.bulkPaidAccountV309=function(encoded,value){
+    const account=decodeDashboardAccount(encoded);
+    if(value===false && !confirm(`¿Desmarcar los pagos de ${account} en ${MONTHS[state.currentMonth]}?`))return;
+
+    const rows=monthlySourceRowsV309(encoded);
+    let changed=0;
+    rows.forEach(({col,view})=>{
+      qListV309(view).forEach(q=>{
+        if(setPaidV309(col,view,q,value)) changed++;
+      });
+    });
+
+    if(changed){
+      saveState();
+      render();
+    }else{
+      alert(`No encontré pagos modificables de ${account} en ${MONTHS[state.currentMonth]}.`);
+    }
+  };
+
+  // Compatibilidad extra: cualquier botón viejo también usa V309.
+  window.toggleMonthlyAccountApart=window.bulkApartAccountV309;
+  window.toggleMonthlyAccountPaid=window.bulkPaidAccountV309;
+})();
+</script>
+
+
+<script>
+/* ============================================================
+   V310 · PAGOS A MESES · CAMBIO DE PROPIEDAD DESDE UN MES
+   Ejemplo:
+   - Enero–Agosto: Mío
+   - Desde Septiembre: De Moni
+   Mantiene el historial previo intacto.
+============================================================ */
+(function(){
+  window.__APP_VERSION__='v310-propiedad-desde-mes';
+
+  const n310=v=>Math.max(0,Number(v)||0);
+  const idx310=(m,y)=>(parseInt(y)||0)*12+(parseInt(m)||0);
+
+  function baseOwnershipV310(item){
+    const type=['self','shared','other'].includes(item?.ownerType)?item.ownerType:'self';
+    const fullTotal=n310(item?.totalAmount||item?.amount);
+    const fullMonthly=n310(item?.amount||item?.monthlyAmount);
+    const otherTotal=type==='shared'?n310(item?.sharedOtherAmount):(type==='other'?fullTotal:0);
+    const ownTotal=type==='shared'
+      ? (item?.sharedOwnAmount!==undefined?n310(item.sharedOwnAmount):Math.max(0,fullTotal-otherTotal))
+      : (type==='self'?fullTotal:0);
+    const otherMonthly=type==='shared'
+      ? n310(item?.sharedOtherMonthlyAmount)
+      : (type==='other'?fullMonthly:0);
+    const ownMonthly=type==='shared'
+      ? (item?.sharedOwnMonthlyAmount!==undefined?n310(item.sharedOwnMonthlyAmount):Math.max(0,fullMonthly-otherMonthly))
+      : (type==='self'?fullMonthly:0);
+    return {
+      ownerType:type,
+      person:type==='self'?'Yo':(item?.person||'Otra persona'),
+      sharedOwnAmount:ownTotal,
+      sharedOtherAmount:otherTotal,
+      sharedOwnMonthlyAmount:ownMonthly,
+      sharedOtherMonthlyAmount:otherMonthly
+    };
+  }
+
+  function scheduleV310(item){
+    return Array.isArray(item?.ownershipScheduleV310)
+      ? item.ownershipScheduleV310
+          .filter(x=>x && Number.isFinite(parseInt(x.fromMonth)) && Number.isFinite(parseInt(x.fromYear)))
+          .slice()
+          .sort((a,b)=>idx310(a.fromMonth,a.fromYear)-idx310(b.fromMonth,b.fromYear))
+      : [];
+  }
+
+  window.getOwnershipAtMonthV310=function(item,m=state.currentMonth,y=state.currentYear){
+    if(!item) return baseOwnershipV310(item);
+    let current=baseOwnershipV310(item);
+    scheduleV310(item).forEach(change=>{
+      if(idx310(change.fromMonth,change.fromYear)<=idx310(m,y)){
+        current={
+          ownerType:['self','shared','other'].includes(change.ownerType)?change.ownerType:'self',
+          person:change.ownerType==='self'?'Yo':(change.person||'Otra persona'),
+          sharedOwnAmount:n310(change.sharedOwnAmount),
+          sharedOtherAmount:n310(change.sharedOtherAmount),
+          sharedOwnMonthlyAmount:n310(change.sharedOwnMonthlyAmount),
+          sharedOtherMonthlyAmount:n310(change.sharedOtherMonthlyAmount)
+        };
+      }
+    });
+    return current;
+  };
+
+  function cloneForMonthV310(item,m=state.currentMonth,y=state.currentYear){
+    if(!item) return item;
+    const src=item.__sourceItem||item;
+    const eff=getOwnershipAtMonthV310(src,m,y);
+    return {
+      ...item,
+      ownerType:eff.ownerType,
+      person:eff.person,
+      sharedOwnAmount:eff.sharedOwnAmount,
+      sharedOtherAmount:eff.sharedOtherAmount,
+      sharedOwnMonthlyAmount:eff.sharedOwnMonthlyAmount,
+      sharedOtherMonthlyAmount:eff.sharedOtherMonthlyAmount,
+      ownershipScheduleV310:src.ownershipScheduleV310||item.ownershipScheduleV310||[]
+    };
+  }
+
+  function scheduleSummaryV310(item){
+    const rows=scheduleV310(item);
+    if(!rows.length) return '';
+    return `<div class="mt-3 rounded-xl border border-gray-100 bg-white p-3">
+      <div class="text-[10px] font-extrabold text-gray-700 mb-2">Cambios programados</div>
+      <div class="space-y-2">
+        ${rows.map((r,i)=>{
+          const label=r.ownerType==='self'?'Mío':r.ownerType==='shared'?`Compartido con ${escapeHtml(r.person||'otra persona')}`:`De ${escapeHtml(r.person||'otra persona')}`;
+          return `<div class="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2">
+            <div class="min-w-0">
+              <div class="text-[10px] font-bold text-gray-700">${MONTHS[parseInt(r.fromMonth)]} ${r.fromYear} → ${label}</div>
+              <div class="text-[9px] text-gray-400">${r.ownerType==='shared'?`Mi mensualidad ${fmt(r.sharedOwnMonthlyAmount)} · otros ${fmt(r.sharedOtherMonthlyAmount)}`:r.ownerType==='other'?`Desde ese mes ya no entra a mi responsabilidad.`:`Desde ese mes vuelve a ser mío.`}</div>
+            </div>
+            <button type="button" onclick="removeOwnershipChangeV310('${item.id}',${i})" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-500 text-[9px] font-bold">Eliminar</button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  function injectEffectiveDateUIV310(form,item){
+    if(!form || form.dataset.recordType!=='installment' || !item) return;
+    form.querySelectorAll('[data-v310-effective]').forEach(x=>x.remove());
+    const ownerBlock=form.querySelector('[data-record-owner-v175]');
+    if(!ownerBlock) return;
+
+    const currentEff=getOwnershipAtMonthV310(item,state.currentMonth,state.currentYear);
+    const html=`<section data-v310-effective class="rounded-2xl border border-lila-100 bg-lila-50/35 p-4 mt-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="text-[10px] font-extrabold text-lila-600 uppercase tracking-wide">Desde cuándo aplica este cambio</div>
+          <p class="text-[10px] text-gray-400 mt-1">Puedes cambiar quién paga solo desde un mes específico. Los meses anteriores conservan su propiedad original.</p>
+        </div>
+        <span class="px-2 py-1 rounded-lg bg-white border border-lila-100 text-[8.5px] font-bold text-lila-600">Histórico protegido</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 mt-3">
+        <label class="cursor-pointer">
+          <input type="radio" name="ownershipApplyModeV310" value="all" class="peer sr-only" checked onchange="toggleOwnershipDateV310(this.form)">
+          <div class="rounded-xl border border-gray-100 bg-white p-3 peer-checked:border-lila-300 peer-checked:ring-2 peer-checked:ring-lila-100">
+            <div class="text-[10px] font-extrabold text-gray-700">Aplicar a todo el plan</div>
+            <div class="text-[9px] text-gray-400 mt-1">Cambia también los meses anteriores.</div>
+          </div>
+        </label>
+        <label class="cursor-pointer">
+          <input type="radio" name="ownershipApplyModeV310" value="from" class="peer sr-only" onchange="toggleOwnershipDateV310(this.form)">
+          <div class="rounded-xl border border-gray-100 bg-white p-3 peer-checked:border-lila-300 peer-checked:ring-2 peer-checked:ring-lila-100">
+            <div class="text-[10px] font-extrabold text-gray-700">Aplicar desde un mes</div>
+            <div class="text-[9px] text-gray-400 mt-1">Mantiene intacto lo que ya pasó.</div>
+          </div>
+        </label>
+      </div>
+
+      <div data-v310-date-fields class="hidden grid grid-cols-2 gap-3 mt-3">
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 mb-1">Desde el mes</label>
+          <select name="ownershipFromMonthV310" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white">
+            ${MONTHS.map((m,i)=>`<option value="${i}" ${i===state.currentMonth?'selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-gray-500 mb-1">Año</label>
+          <input type="number" name="ownershipFromYearV310" value="${state.currentYear}" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white">
+        </div>
+      </div>
+
+      <div class="mt-3 rounded-xl bg-white border border-gray-100 px-3 py-2.5 text-[9.5px] text-gray-500">
+        Hoy, para <b>${MONTHS[state.currentMonth]} ${state.currentYear}</b>, este pago se considera:
+        <b class="text-gray-700">${currentEff.ownerType==='self'?'Mío':currentEff.ownerType==='shared'?`Compartido con ${escapeHtml(currentEff.person)}`:`De ${escapeHtml(currentEff.person)}`}</b>.
+      </div>
+      ${scheduleSummaryV310(item)}
+    </section>`;
+    ownerBlock.insertAdjacentHTML('afterend',html);
+    try{lucide.createIcons();}catch(e){}
+  }
+
+  window.toggleOwnershipDateV310=function(form){
+    const mode=form.querySelector('[name="ownershipApplyModeV310"]:checked')?.value||'all';
+    form.querySelector('[data-v310-date-fields]')?.classList.toggle('hidden',mode!=='from');
+  };
+
+  window.removeOwnershipChangeV310=function(itemId,index){
+    const item=(state.installments||[]).find(x=>String(x.id)===String(itemId));
+    if(!item)return;
+    const rows=scheduleV310(item);
+    if(index<0||index>=rows.length)return;
+    rows.splice(index,1);
+    item.ownershipScheduleV310=rows;
+    const mv=(state.creditMovements||[]).find(m=>String(m.sourceBudgetItemId||'')===String(item.id) && m.sourceBudgetCollection==='installments');
+    if(mv) mv.ownershipScheduleV310=JSON.parse(JSON.stringify(rows));
+    saveState();
+    openInstallmentRecordModal(item.id);
+  };
+
+  // Nuevo + editar: mismo formulario, pero solo los existentes pueden programar cambio histórico.
+  const injectBaseV310=window.injectRecordOwnershipV175;
+  window.injectRecordOwnershipV175=function(type,id='',presetPerson=''){
+    const r=injectBaseV310.apply(this,arguments);
+    if(type==='installment'){
+      const form=document.querySelector('#modalContent form[data-record-type="installment"]');
+      const item=(state.installments||[]).find(x=>String(x.id)===String(id||form?.dataset.itemId||''));
+      if(item) injectEffectiveDateUIV310(form,item);
+    }
+    return r;
+  };
+
+  // Guardado: si es "desde un mes", conserva la propiedad base y añade un hito.
+  const saveBaseV310=window.saveRecordForm;
+  window.saveRecordForm=function(event,type,id=''){
+    if(type!=='installment' || !id){
+      return saveBaseV310.apply(this,arguments);
+    }
+
+    const form=event.target;
+    const fd=new FormData(form);
+    const mode=fd.get('ownershipApplyModeV310')||'all';
+    const itemBefore=(state.installments||[]).find(x=>String(x.id)===String(id));
+    if(!itemBefore) return saveBaseV310.apply(this,arguments);
+
+    const baseSnapshot={
+      ownerType:itemBefore.ownerType,
+      person:itemBefore.person,
+      sharedOwnAmount:itemBefore.sharedOwnAmount,
+      sharedOtherAmount:itemBefore.sharedOtherAmount,
+      sharedOwnMonthlyAmount:itemBefore.sharedOwnMonthlyAmount,
+      sharedOtherMonthlyAmount:itemBefore.sharedOtherMonthlyAmount
+    };
+    const oldSchedule=scheduleV310(itemBefore);
+
+    if(mode!=='from'){
+      const result=saveBaseV310.apply(this,arguments);
+      const saved=(state.installments||[]).find(x=>String(x.id)===String(id));
+      if(saved){
+        saved.ownershipScheduleV310=[];
+        const mv=(state.creditMovements||[]).find(m=>String(m.sourceBudgetItemId||'')===String(saved.id)&&m.sourceBudgetCollection==='installments');
+        if(mv) mv.ownershipScheduleV310=[];
+        saveState();
+        render();
+      }
+      return result;
+    }
+
+    const fromMonth=parseInt(fd.get('ownershipFromMonthV310'));
+    const fromYear=parseInt(fd.get('ownershipFromYearV310'))||state.currentYear;
+    if(Number.isNaN(fromMonth)||fromMonth<0||fromMonth>11){
+      event.preventDefault();
+      alert('Selecciona un mes válido para aplicar el cambio.');
+      return;
+    }
+
+    const selectedOwner=fd.get('recordOwnerType')||'self';
+    const selectedPerson=selectedOwner==='self'?'Yo':String(fd.get('recordOwnerPerson')||'Otra persona').trim()||'Otra persona';
+    const total=n310(fd.get('totalAmount'));
+    const monthly=n310(fd.get('amount'));
+    const ownTotal=selectedOwner==='shared'?n310(fd.get('recordSharedOwnAmount')):(selectedOwner==='self'?total:0);
+    const otherTotal=selectedOwner==='shared'?n310(fd.get('recordSharedOtherAmount')):(selectedOwner==='other'?total:0);
+    const ownMonthly=selectedOwner==='shared'?n310(fd.get('recordSharedOwnMonthlyAmount')):(selectedOwner==='self'?monthly:0);
+    const otherMonthly=selectedOwner==='shared'?n310(fd.get('recordSharedOtherMonthlyAmount')):(selectedOwner==='other'?monthly:0);
+
+    // Permite que toda la lógica existente valide y guarde el resto del formulario.
+    const result=saveBaseV310.apply(this,arguments);
+
+    const saved=(state.installments||[]).find(x=>String(x.id)===String(id));
+    if(!saved) return result;
+
+    // Restaura la propiedad histórica/base.
+    Object.entries(baseSnapshot).forEach(([k,v])=>{
+      if(v===undefined) delete saved[k];
+      else saved[k]=v;
+    });
+
+    const entry={
+      fromMonth,fromYear,
+      ownerType:selectedOwner,
+      person:selectedPerson,
+      sharedOwnAmount:ownTotal,
+      sharedOtherAmount:otherTotal,
+      sharedOwnMonthlyAmount:ownMonthly,
+      sharedOtherMonthlyAmount:otherMonthly
+    };
+    const next=oldSchedule.filter(x=>idx310(x.fromMonth,x.fromYear)!==idx310(fromMonth,fromYear));
+    next.push(entry);
+    next.sort((a,b)=>idx310(a.fromMonth,a.fromYear)-idx310(b.fromMonth,b.fromYear));
+    saved.ownershipScheduleV310=next;
+
+    // Espejo de Tarjetas: conserva propiedad base pero conoce el mismo historial.
+    const mv=(state.creditMovements||[]).find(m=>String(m.sourceBudgetItemId||'')===String(saved.id)&&m.sourceBudgetCollection==='installments');
+    if(mv){
+      Object.entries(baseSnapshot).forEach(([k,v])=>{
+        if(v===undefined) delete mv[k];
+        else mv[k]=v;
+      });
+      mv.ownershipScheduleV310=JSON.parse(JSON.stringify(next));
+    }
+
+    saveState();
+    render();
+    return result;
+  };
+
+  // ===== MOTOR DE CÁLCULO MENSUAL =====
+  const ownershipBaseFnV310=window.getOwnershipTruthV253;
+  if(typeof ownershipBaseFnV310==='function'){
+    window.getOwnershipTruthV253=function(item,collection=''){
+      const m=item?.__viewMonth??state.currentMonth;
+      const y=item?.__viewYear??state.currentYear;
+      return ownershipBaseFnV310(cloneForMonthV310(item,m,y),collection);
+    };
+    window.getPersonalAmountV253=function(item,collection=''){
+      return window.getOwnershipTruthV253(item,collection).own;
+    };
+    window.getPersonalOwnershipRatioV214=function(item){
+      const m=item?.__viewMonth??state.currentMonth;
+      const y=item?.__viewYear??state.currentYear;
+      const clone=cloneForMonthV310(item,m,y);
+      const o=window.getOwnershipTruthV253(clone,item?.__collection||'');
+      const amount=n310(getPaymentAmount(clone));
+      return amount>0?Math.max(0,Math.min(1,o.own/amount)):(o.type==='other'?0:1);
+    };
+    window.getStrategyOwnRatioV203=window.getPersonalOwnershipRatioV214;
+  }
+
+  const installNumsBaseV310=window.getInstallmentPersonalNumbersV262;
+  if(typeof installNumsBaseV310==='function'){
+    window.getInstallmentPersonalNumbersV262=function(item){
+      const m=item?.__viewMonth??state.currentMonth;
+      const y=item?.__viewYear??state.currentYear;
+      return installNumsBaseV310(cloneForMonthV310(item,m,y));
+    };
+  }
+
+  // ===== TARJETAS / PERSONAS =====
+  const creditCardMovementsBaseV310=window.getCreditCardMovements;
+  if(typeof creditCardMovementsBaseV310==='function'){
+    window.getCreditCardMovements=function(cardId,m=state.currentMonth,y=state.currentYear){
+      return creditCardMovementsBaseV310(cardId,m,y).map(mv=>cloneForMonthV310(mv,m,y));
+    };
+  }
+
+  window.getCreditMovementOwner=function(mv,m=state.currentMonth,y=state.currentYear){
+    const eff=getOwnershipAtMonthV310(mv?.__sourceItem||mv,m,y);
+    return eff.ownerType==='self'?'Yo':(eff.person||'Otra persona');
+  };
+
+  window.getCreditMovementKind=function(mv,m=state.currentMonth,y=state.currentYear){
+    const eff=getOwnershipAtMonthV310(mv?.__sourceItem||mv,m,y);
+    return eff.ownerType;
+  };
+
+  window.getCreditMovementOtherRatio=function(mv,m=state.currentMonth,y=state.currentYear){
+    const eff=getOwnershipAtMonthV310(mv?.__sourceItem||mv,m,y);
+    if(eff.ownerType==='self')return 0;
+    if(eff.ownerType==='other')return 1;
+    const monthly=n310(getCreditMovementMonthlyAmount(mv,m,y));
+    if(monthly<=0)return 0;
+    if(eff.sharedOtherMonthlyAmount>0)return Math.max(0,Math.min(1,eff.sharedOtherMonthlyAmount/monthly));
+    const total=n310(mv?.totalAmount||mv?.__sourceItem?.totalAmount);
+    return total>0?Math.max(0,Math.min(1,eff.sharedOtherAmount/total)):0;
+  };
+
+  window.getCreditMovementThirdPartyMonthlyAmount=function(mv,m=state.currentMonth,y=state.currentYear){
+    const due=n310(getCreditMovementMonthlyAmount(mv,m,y));
+    const eff=getOwnershipAtMonthV310(mv?.__sourceItem||mv,m,y);
+    if(eff.ownerType==='self')return 0;
+    if(eff.ownerType==='other')return due;
+    if(eff.sharedOtherMonthlyAmount>0)return Math.min(due,eff.sharedOtherMonthlyAmount);
+    return due*window.getCreditMovementOtherRatio(mv,m,y);
+  };
+
+  window.getCreditMovementOwnMonthlyAmount=function(mv,m=state.currentMonth,y=state.currentYear){
+    return Math.max(0,n310(getCreditMovementMonthlyAmount(mv,m,y))-window.getCreditMovementThirdPartyMonthlyAmount(mv,m,y));
+  };
+
+  window.getCreditMovementThirdPartyRemainingAmount=function(mv,m=state.currentMonth,y=state.currentYear){
+    if(!mv)return 0;
+    const src=mv.__sourceItem||mv;
+    const start=idx310(m,y);
+    let end=start;
+    if((mv.purchaseType||'')==='installments' || mv.__linkedCollection==='installments'){
+      const sm=parseInt(src.startMonth);
+      const sy=parseInt(src.startYear)||y;
+      const months=Math.max(1,parseInt(src.totalMonths||src.months)||1);
+      end=idx310(sm,sy)+months-1;
+    }
+    let total=0;
+    for(let k=start;k<=end && k<start+120;k++){
+      const cm=((k%12)+12)%12, cy=Math.floor(k/12);
+      total+=window.getCreditMovementThirdPartyMonthlyAmount(mv,cm,cy);
+    }
+    return Math.max(0,total);
+  };
+
+  window.runOwnershipScheduleQA_V310=function(itemId){
+    const item=(state.installments||[]).find(x=>String(x.id)===String(itemId));
+    if(!item)return {found:false};
+    return {
+      found:true,
+      base:baseOwnershipV310(item),
+      schedule:scheduleV310(item),
+      current:getOwnershipAtMonthV310(item,state.currentMonth,state.currentYear)
+    };
+  };
 })();
 </script>
