@@ -19498,3 +19498,140 @@ window.__APP_VERSION__='v297-compartidos-desglosados';
   };
 })();
 </script>
+
+<script>
+/* ============================================================
+   V311 · PROPIEDAD PROGRAMADA TAMBIÉN EN PERSONAS / COBROS
+   Corrige el caso:
+   - Enero–Agosto: Mío
+   - Desde Septiembre: De otra persona
+   El gasto sale de mi responsabilidad y ENTRA al estado de cuenta
+   de esa persona en el mes efectivo, sin reescribir el histórico.
+============================================================ */
+(function(){
+  window.__APP_VERSION__='v311-propiedad-personas-corregida';
+
+  const sameV311=(a,b)=>String(a??'')===String(b??'');
+
+  function linkedInstallmentV311(mv){
+    if(!mv)return null;
+    const ids=[mv.sourceBudgetItemId,mv.budgetRecordId,mv.sourceId].filter(Boolean).map(String);
+    if(!ids.length)return null;
+    return (state.installments||[]).find(x=>ids.includes(String(x.id)))||null;
+  }
+
+  function effectiveSourceV311(mv){
+    if(!mv)return mv;
+    // El presupuesto es la fuente maestra para pagos a meses programados.
+    // Así funciona aunque el espejo de Tarjetas todavía no tenga copiado
+    // ownershipScheduleV310 por algún registro histórico.
+    const budget=linkedInstallmentV311(mv);
+    if(budget && Array.isArray(budget.ownershipScheduleV310) && budget.ownershipScheduleV310.length)return budget;
+    return mv.__sourceItem||mv;
+  }
+
+  function effectiveCreditCloneV311(mv,m=state.currentMonth,y=state.currentYear){
+    if(!mv)return mv;
+    const src=effectiveSourceV311(mv);
+    if(typeof window.getOwnershipAtMonthV310!=='function')return mv;
+    const eff=window.getOwnershipAtMonthV310(src,m,y);
+    return {
+      ...mv,
+      ownerType:eff.ownerType,
+      person:eff.ownerType==='self'?'Yo':(eff.person||'Otra persona'),
+      sharedOwnAmount:eff.sharedOwnAmount,
+      sharedOtherAmount:eff.sharedOtherAmount,
+      sharedOwnMonthlyAmount:eff.sharedOwnMonthlyAmount,
+      sharedOtherMonthlyAmount:eff.sharedOtherMonthlyAmount,
+      ownershipScheduleV310:src?.ownershipScheduleV310||mv.ownershipScheduleV310||[],
+      __sourceItem:src
+    };
+  }
+  window.getEffectiveCreditCloneV311=effectiveCreditCloneV311;
+
+  // La lista de personas también debe conocer a alguien que aparece
+  // únicamente desde un cambio programado de propiedad.
+  const savedPeopleBaseV311=window.getSavedCreditPeople;
+  window.getSavedCreditPeople=function(){
+    const names=new Set(typeof savedPeopleBaseV311==='function'?savedPeopleBaseV311():[]);
+    (state.creditMovements||[]).forEach(raw=>{
+      const mv=effectiveCreditCloneV311(raw,state.currentMonth,state.currentYear);
+      if(mv && mv.ownerType!=='self' && mv.person)names.add(mv.person);
+    });
+    // Fallback directo al calendario del pago a meses, incluso si el espejo
+    // todavía no existiera por provenir de una versión anterior.
+    (state.installments||[]).forEach(item=>{
+      if(typeof window.getOwnershipAtMonthV310!=='function')return;
+      const eff=window.getOwnershipAtMonthV310(item,state.currentMonth,state.currentYear);
+      if(eff?.ownerType!=='self' && eff?.person)names.add(eff.person);
+    });
+    return [...names].filter(Boolean).sort((a,b)=>String(a).localeCompare(String(b)));
+  };
+
+  // Este era el punto del bug: la función antigua filtraba primero por
+  // mv.ownerType (propiedad BASE). Si el registro históricamente era mío,
+  // lo descartaba antes de consultar el cambio efectivo de Septiembre.
+  window.getCreditPersonMovementsV167=function(person,cardId=''){
+    const norm=normalizeCreditText(person);
+    const card=cardId?getCreditCards(true).find(c=>sameV311(c.id,cardId)):null;
+    return getCreditMovements()
+      .map(raw=>effectiveCreditCloneV311(raw,state.currentMonth,state.currentYear))
+      .filter(mv=>{
+        if(!mv || mv.ownerType==='self')return false;
+        if(normalizeCreditText(getCreditMovementOwner(mv,state.currentMonth,state.currentYear))!==norm)return false;
+        if(!cardId)return true;
+        return sameV311(mv.cardId,cardId) || sameV311(mv.accountId,card?.accountId);
+      });
+  };
+
+  // La deuda restante debe respetar quién era responsable en CADA mes.
+  // No usamos el ownerType base como puerta de entrada, porque puede haber
+  // una transferencia de propiedad programada.
+  const personRemainingBaseV311=window.getCreditMovementPersonRemaining;
+  window.getCreditMovementPersonRemaining=function(mv,m=state.currentMonth,y=state.currentYear){
+    if(!mv)return 0;
+    const view=effectiveCreditCloneV311(mv,m,y);
+    // Los movimientos enlazados de solo proyección conservan el cálculo previo.
+    if(view?.__linked && typeof personRemainingBaseV311==='function'){
+      return personRemainingBaseV311(view,m,y);
+    }
+    const prev=creditAddMonths(m,y,-1);
+    const overduePrev=Math.max(0,getCreditMovementOutstandingThrough(view,prev.month,prev.year));
+    const future=Math.max(0,getCreditMovementThirdPartyRemainingAmount(view,m,y));
+    const received=Math.max(0,getCreditReceiptAmount(view,m,y));
+    return Math.max(0,overduePrev+future-received);
+  };
+
+  // QA no destructivo: permite validar desde consola que todo cambio activo
+  // aparezca en la persona correcta para el mes seleccionado.
+  window.runOwnershipPeopleQA_V311=function(m=state.currentMonth,y=state.currentYear){
+    const issues=[];
+    const checks=[];
+    (state.installments||[]).forEach(item=>{
+      if(!Array.isArray(item.ownershipScheduleV310)||!item.ownershipScheduleV310.length)return;
+      const eff=typeof window.getOwnershipAtMonthV310==='function'?window.getOwnershipAtMonthV310(item,m,y):null;
+      if(!eff || eff.ownerType==='self')return;
+      const mv=(state.creditMovements||[]).find(x=>
+        sameV311(x.id,item.sourceCreditMovementId) ||
+        (sameV311(x.sourceBudgetItemId,item.id) && (x.sourceBudgetCollection==='installments'||x.budgetCollection==='installments'))
+      );
+      const person=eff.person||'Otra persona';
+      const list=window.getCreditPersonMovementsV167(person);
+      const visible=!!mv && list.some(x=>sameV311(x.id,mv.id));
+      const due=mv?getCreditMovementThirdPartyMonthlyAmount(effectiveCreditCloneV311(mv,m,y),m,y):0;
+      checks.push({id:item.id,concept:item.concept,person,month:m,year:y,mirror:!!mv,visible,due});
+      if(!mv)issues.push(`${item.concept||item.id}: falta espejo en Tarjetas`);
+      else if(!visible)issues.push(`${item.concept||item.id}: no aparece en ${person}`);
+      else if(due<=0.009)issues.push(`${item.concept||item.id}: aparece en ${person}, pero la mensualidad de ${MONTHS[m]} es $0`);
+    });
+    if(issues.length)console.warn('V311 QA · revisar',issues,checks);
+    else console.info('V311 OK · propiedad programada sincronizada con Personas',checks);
+    return {ok:issues.length===0,issues,checks};
+  };
+
+  setTimeout(()=>{
+    try{window.runOwnershipPeopleQA_V311();}
+    catch(e){console.warn('V311 QA error',e);}
+  },0);
+})();
+</script>
